@@ -6,11 +6,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            /* If you still want to prevent scrolling */
+            display: flex;
+            /* Use flexbox for centering */
+            justify-content: center;
+            /* Center horizontally */
+            align-items: center;
+            /* Center vertically */
+            min-height: 100vh;
+            /* Ensure full viewport height */
+        }
+
+        #cubeContainer {
+            width: 300px;
+            /* Adjust as needed */
+            height: 240px;
+            /* Adjust as needed */
+            position: relative;
+            /* Needed for absolute positioning of faces */
+        }
+
+        .cube-face {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            /* Essential for the layout */
+            border: 1px solid black;
+            display: grid;
+            gridTemplateColumns: repeat(3, 1fr);
+            gridTemplateRows: repeat(3, 1fr);
+        }
+    </style>
 </head>
 
 <body>
 
     <button id="connectCube">connectCube </button>
+    <div id="cubeContainer"></div>
 
     <script>
         var DEBUG = false; // Needed for the mathlib

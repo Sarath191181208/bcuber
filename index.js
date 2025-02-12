@@ -244,12 +244,14 @@ function parseCubeData(characteristic, msg) {
             console.log('[qiyicube] Facelet:', newFacelet);
             curCubie.fromFacelet(newFacelet);
 
+            drawCube(curCubie);
+
             const tmp = curCubie;
             curCubie = prevCubie;
             prevCubie = tmp;
         } else {
             // for (const callbackArgs of toCallback) { // Use for...of loop
-                // GiikerCube.callback.apply(null, callbackArgs);
+            // GiikerCube.callback.apply(null, callbackArgs);
             // }
         }
 
@@ -259,12 +261,74 @@ function parseCubeData(characteristic, msg) {
         }
     }
 
-    drawCube(curCubie);
-
     lastTs = ts;
 }
 
 function drawCube(cube) {
+    const facelets = cube.toFaceCube();
+    console.log("[Drawing]: ", { facelets })
+
+    const faceColors = {
+        'U': 'white',
+        'R': 'red',
+        'F': 'green',
+        'D': 'yellow',
+        'L': 'orange',
+        'B': 'blue'
+    };
+
+    const cubeContainer = document.getElementById('cubeContainer');
+    cubeContainer.innerHTML = ''; // Clear previous faces
+
+    const faceNames = ['U', 'R', 'F', 'D', 'L', 'B'];
+
+
+    faceNames.forEach(faceName => {
+        const face = document.createElement('div');
+        face.classList.add('cube-face');
+        face.style.width = '60px'; // Adjust size as needed
+        face.style.height = '60px';
+        face.style.border = '1px solid black';
+        face.style.display = 'grid';
+        face.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        face.style.gridTemplateRows = 'repeat(3, 1fr)';
+
+        const index = faceNames.indexOf(faceName);
+        const faceletString = (facelets.substring(index * 9, (index + 1) * 9));
+
+        console.log({ faceletString, index, faceName, color: faceColors[faceName] });
+
+        for (let i = 0; i < 9; i++) {
+
+            const color = faceColors[faceletString[i]];
+            const sticker = document.createElement('div');
+            sticker.style.backgroundColor = color;
+            sticker.style.border = '1px solid black';
+            face.appendChild(sticker);
+        }
+        cubeContainer.appendChild(face);
+    });
+
+    // Arrange faces in a "flat" or "open box" layout.  Adjust as needed.
+    const faces = cubeContainer.querySelectorAll('.cube-face');
+
+    faces[0].style.top = '0px';      // U
+    faces[0].style.left = '60px';   // U
+
+    faces[1].style.top = '60px';     // R
+    faces[1].style.left = '120px';  // R
+
+    faces[2].style.top = '60px';     // F
+    faces[2].style.left = '60px';   // F
+
+    faces[3].style.top = '120px';    // D
+    faces[3].style.left = '60px';   // D
+
+    faces[4].style.top = '60px';     // L
+    faces[4].style.left = '0px';    // L
+
+    faces[5].style.top = '60px';     // B
+    faces[5].style.left = '180px';  // B
 }
 
 function parseFacelet(faceMsg) {
