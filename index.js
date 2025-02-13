@@ -6,13 +6,22 @@ const QI_YI_KEYS = ['NoDg7ANAjGkEwBYCc0xQnADAVgkzGAzHNAGyRTanQi5QIFyHrjQMQgsC6QA
 const QI_YI_CUBE_CHARACTERISTIC_UUID_PATTERN = "fff6"; // Might not be needed anymore
 const macAddress = "CC:A3:00:00:85:2A"; // Example MAC address
 
+const twistyPlayer = document.getElementById('main-player');
+
 
 let curCubie = new mathlib.CubieCube();
 let prevCubie = new mathlib.CubieCube();
 
 const SOLVED_FACELET = mathlib.SOLVED_FACELET;
 
+// type CubeMove = {
+//     ts: timestamp
+//     move: R | R' |  L | L' |  U | U' |  D | D' |  F | F' |  B | B'
+// }
+let rawInputs = [];
+
 let prevMoves = [];
+
 let lastTs = 0;
 let batteryLevel = 0;
 
@@ -148,7 +157,7 @@ function sendMessage(characteristic, content) {  // Modified to take characteris
         }
     }
 
-    console.log('[qiyicube] send message to cube', msg, encMsg);
+    console.info('[qiyicube] send message to cube', msg, encMsg);
     return characteristic.writeValue(new Uint8Array(encMsg).buffer); // Write to the characteristic
 }
 
@@ -189,71 +198,41 @@ function parseCubeData(characteristic, msg) {
         sendMessage(characteristic, msg.slice(2, 7)); // Send response
         const newFacelet = parseFacelet(msg.slice(7, 34));
 
+        drawCube(curCubie, 'cubeContainer');
+
         prevCubie.fromFacelet(newFacelet);
 
-        console.log('[battery] Battery level:', batteryLevel);
-        console.log('[qiyicube] Cube hello:', newFacelet);
+        console.info('[battery] Battery level:', batteryLevel);
+        console.info('[qiyicube] Cube hello:', newFacelet);
 
     } else if (opcode === 0x03) { // State change
         sendMessage(characteristic, msg.slice(2, 7));
 
-        let todoMoves = [[msg[34], ts]];
-        let offset = 91; // Start offset for historical moves
+        let move = findMove(msg[34]);
+        console.info('[qiyicube] Move:', move);
 
-        while (todoMoves.length < 10) {
-            offset -= 5;
-            if (offset < 7) break; // Check for valid offset
+        rawInputs.push({ timeStamp: locTime, move, cubeTimeStamp: ts });
 
-            const hisTs = (msg[offset] << 24) | (msg[offset + 1] << 16) | (msg[offset + 2] << 8) | msg[offset + 3];
-            const hisMv = msg[offset + 4];
+        move = handleSliceMoves(move, rawInputs);
 
-            if (hisTs <= lastTs) {
-                break;
-            }
-            todoMoves.push([hisMv, hisTs]);
-        }
-
-        if (todoMoves.length > 1) {
-            console.log('[qiyicube] Missed historical moves:', JSON.stringify(todoMoves), lastTs);
-        }
-
-        const toCallback = [];
-        let curFacelet;
-
-        for (let i = todoMoves.length - 1; i >= 0; i--) {
-            const moveIndex = todoMoves[i][0] - 1;
-            const axis = [4, 1, 3, 0, 2, 5][Math.floor(moveIndex / 2)]; // Use Math.floor for integer division
-            const power = [0, 2][moveIndex % 2];
-            const m = axis * 3 + power;
-
-            // Assuming mathlib.CubieCube and related functions are defined.
-            mathlib.CubieCube.CubeMult(prevCubie, mathlib.CubieCube.moveCube[m], curCubie);
-            prevMoves.unshift("URFDLB".charAt(axis) + " 2'".charAt(power));
-            prevMoves = prevMoves.slice(0, 8);
-            curFacelet = curCubie.toFaceCube();
-            toCallback.push([curFacelet, prevMoves.slice(), [Math.trunc(todoMoves[i][1] / 1.6), locTime]]);
-
-            const tmp = curCubie;
-            curCubie = prevCubie;
-            prevCubie = tmp;
-        }
+        prevMoves.push(move);
 
         const newFacelet = parseFacelet(msg.slice(7, 34));
 
-        if (newFacelet !== curFacelet) {
-            console.log('[qiyicube] Facelet:', newFacelet);
-            curCubie.fromFacelet(newFacelet);
+        console.info('[qiyicube] Facelet:', newFacelet);
+        curCubie.fromFacelet(newFacelet);
 
-            drawCube(curCubie);
+        drawCube(curCubie, 'cubeContainer');
 
-            const tmp = curCubie;
-            curCubie = prevCubie;
-            prevCubie = tmp;
-        } else {
-            // for (const callbackArgs of toCallback) { // Use for...of loop
-            // GiikerCube.callback.apply(null, callbackArgs);
-            // }
-        }
+        // animate the twisty cube 
+        console.log("[TwistyPlayer]: ", { move });
+        // twistyPlayer.experimentalAddMove(move.toString().trim());
+        // update using settimeout and a simple queue
+        // twistyPlayer.alg = twistyPlayer.alg + " " + move.toString().trim();
+        // setTimeout(() => {
+        //     twistyPlayer.experimentalAddMove(move.toString().trim());
+        // }, 1000);
+        playMove(move);
 
         const newBatteryLevel = msg[35];
         if (newBatteryLevel !== batteryLevel) {
@@ -264,7 +243,123 @@ function parseCubeData(characteristic, msg) {
     lastTs = ts;
 }
 
-function drawCube(cube) {
+const moveBuffer = [];
+let isPlaying = false;
+
+function playMove(move) {
+    // Always add the move to the buffer.
+    moveBuffer.push(move);
+
+    // If a move is already in progress, don't start a new one.
+    if (isPlaying) return;
+
+    // Otherwise, start processing the queue.
+    isPlaying = true;
+    processNextMove();
+}
+
+function processNextMove() {
+    if (moveBuffer.length === 0) {
+        isPlaying = false;
+        return;
+    }
+
+    // Get the next move from the buffer.
+    const nextMove = moveBuffer.shift();
+
+    // Execute the move.
+    twistyPlayer.experimentalAddMove(nextMove);
+
+    // Wait for the animation to finish before processing the next move.
+    setTimeout(processNextMove, 1000);
+}
+
+function handleSliceMoves(move, rawInputs) {
+    if (rawInputs.length < 2) {
+        return move;
+    }
+    let currMoveRaw = rawInputs[rawInputs.length - 1];
+    let prevMoveRaw = rawInputs[rawInputs.length - 2];
+
+    // check if the time between both the moves is less than 5ms 
+    const TIME_DIFF = 5; // MS
+    if (!((currMoveRaw.timeStamp - prevMoveRaw.timeStamp) < TIME_DIFF)) {
+        return move;
+    }
+
+    let currMove = currMoveRaw.move;
+    let prevMove = prevMoveRaw.move;
+
+    const removeReverseTags = (move) => {
+        return move.replace(/'/g, '').trim().toUpperCase();
+    };
+
+    let alternateMoves = {
+        "U": "D",
+        "F": "B",
+        "R": "L",
+    };
+
+    const x = removeReverseTags(currMove);
+    const y = removeReverseTags(prevMove);
+    if (!(alternateMoves[x] === y || alternateMoves[y] === x)) {
+        return move;
+    }
+
+    // check if the moves are in the same dir i.e both are clockwise or both are anti-clockwise
+    const isPrevAlternativeToCurr = currMove.includes("'") && !prevMove.includes("'");
+    const isCurrAlternativeToPrev = !currMove.includes("'") && prevMove.includes("'");
+    if (!(isPrevAlternativeToCurr || isCurrAlternativeToPrev)) {
+        return move;
+    }
+
+    // find out which slice move it is
+    const res = findSlice(currMove, prevMove);
+    if (res === undefined) {
+        throw new Error(`Invalid slice moves", ${{ currMove, prevMove }}`);
+    }
+
+    // remove the last move from the prevMoves
+    prevMoves.pop();
+}
+
+function findSlice(x, y) {
+    x = x.toUpperCase();
+    y = y.toUpperCase();
+
+    // normalizing to reduce cases
+    if (y.includes("U") || y.includes("F") || y.includes("R")) {
+        const temp = x;
+        x = y;
+        y = temp;
+    }
+
+    const sliceCaseMap = {
+        "UD'": "E'",
+        "U'D": "E",
+        "FB'": "S",
+        "F'B": "S'",
+        "RL'": "M'",
+        "R'L": "M"
+    }
+
+    return sliceCaseMap[x + y];
+}
+
+function _is(movePair1, movePair2) {
+    const [x1, y1] = movePair1;
+    const [x2, y2] = movePair2;
+    return (x1 === x2 && y1 === y2);
+}
+
+function findMove(msg_34) {
+    let axis = [4, 1, 3, 0, 2, 5][(msg_34 - 1) >> 1];
+    let power = [0, 2][msg_34 & 1];
+    let move = "URFDLB".charAt(axis) + " 2'".charAt(power);
+    return move.trim();
+}
+
+function drawCube(cube, container) {
     const facelets = cube.toFaceCube();
     console.log("[Drawing]: ", { facelets })
 
@@ -277,7 +372,7 @@ function drawCube(cube) {
         'B': 'blue'
     };
 
-    const cubeContainer = document.getElementById('cubeContainer');
+    const cubeContainer = document.getElementById(container);
     cubeContainer.innerHTML = ''; // Clear previous faces
 
     const faceNames = ['U', 'R', 'F', 'D', 'L', 'B'];
