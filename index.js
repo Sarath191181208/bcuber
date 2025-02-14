@@ -90,12 +90,12 @@ function setupDataListener(characteristic) {
         for (var i = 0; i < value.byteLength; i++) {
             dataArray[i] = value.getUint8(i);
         }
-        console.log("Encrypted Cube Data (bytes):", dataArray);
+        console.debug("Encrypted Cube Data (bytes):", dataArray);
 
         // **DECRYPT the data here using QI_YI_KEYS and the AES algorithm.**
         const decryptedData = decryptData(dataArray, QI_YI_KEYS[0]); // Example - implement decryptData()
 
-        console.log("Decrypted Cube Data (bytes):", decryptedData);
+        console.debug("Decrypted Cube Data (bytes):", decryptedData);
 
         parseCubeData(characteristic, decryptedData);
     });
@@ -157,7 +157,7 @@ function sendMessage(characteristic, content) {  // Modified to take characteris
         }
     }
 
-    console.info('[qiyicube] send message to cube', msg, encMsg);
+    console.debug('[qiyicube] send message to cube', msg, encMsg);
     return characteristic.writeValue(new Uint8Array(encMsg).buffer); // Write to the characteristic
 }
 
@@ -183,6 +183,10 @@ function toUuid128(uuid) {
     return uuid.toUpperCase();
 }
 
+function getCubeTimestampFromData(data, fromIdx) {
+    return (data[fromIdx] << 24) | (data[fromIdx + 1] << 16) | (data[fromIdx + 2] << 8) | data[fromIdx + 3];
+}
+
 function parseCubeData(characteristic, msg) {
     const locTime = Date.now(); // Use standard JS Date.now()
     if (msg[0] !== 0xfe) {
@@ -191,7 +195,7 @@ function parseCubeData(characteristic, msg) {
     }
 
     const opcode = msg[2];
-    const ts = (msg[3] << 24) | (msg[4] << 16) | (msg[5] << 8) | msg[6]; // Bitwise operations for timestamp
+    const ts = getCubeTimestampFromData(msg, 3); // Bitwise operations for timestamp
 
     if (opcode === 0x02) { // Cube hello
         const batteryLevel = msg[35];
@@ -208,14 +212,30 @@ function parseCubeData(characteristic, msg) {
     } else if (opcode === 0x03) { // State change
         sendMessage(characteristic, msg.slice(2, 7));
 
-        let move = findMove(msg[34]);
-        console.info('[qiyicube] Move:', move);
+        let todoMoves = [[msg[34], ts]];
+        while (todoMoves.length < 10) {
+            let off = 91 - 5 * todoMoves.length;
+            let cubeTimeStamp = getCubeTimestampFromData(msg, off);
+            let cubeMove = msg[off + 4];
+            if (cubeTimeStamp <= lastTs) {
+                break;
+            }
+            todoMoves.push([cubeMove, cubeTimeStamp]);
+        }
 
-        rawInputs.push({ timeStamp: locTime, move, cubeTimeStamp: ts });
+        console.info('[qiyicube] Move:', todoMoves);
 
-        move = handleSliceMoves(move, rawInputs);
+        todoMoves.sort((a, b) => a[1] - b[1]);
 
-        prevMoves.push(move);
+        let rawInputs = todoMoves.map(([move, ts]) => {
+            return { move: findMove(move), cubeTimeStamp: ts, timeStamp: locTime };
+        });
+
+        let moves = rawInputs.map(({ move }) => move);
+        prevMoves.push(...moves);
+
+        // rawInputs.push({ timeStamp: locTime, move, cubeTimeStamp: ts });
+        // prevMoves.push(move);
 
         const newFacelet = parseFacelet(msg.slice(7, 34));
 
@@ -225,14 +245,7 @@ function parseCubeData(characteristic, msg) {
         drawCube(curCubie, 'cubeContainer');
 
         // animate the twisty cube 
-        console.log("[TwistyPlayer]: ", { move });
-        // twistyPlayer.experimentalAddMove(move.toString().trim());
-        // update using settimeout and a simple queue
-        // twistyPlayer.alg = twistyPlayer.alg + " " + move.toString().trim();
-        // setTimeout(() => {
-        //     twistyPlayer.experimentalAddMove(move.toString().trim());
-        // }, 1000);
-        playMove(move);
+        playMove();
 
         const newBatteryLevel = msg[35];
         if (newBatteryLevel !== batteryLevel) {
@@ -243,36 +256,57 @@ function parseCubeData(characteristic, msg) {
     lastTs = ts;
 }
 
-const moveBuffer = [];
+let currentIndex = 0;
 let isPlaying = false;
 
-function playMove(move) {
-    // Always add the move to the buffer.
-    moveBuffer.push(move);
-
-    // If a move is already in progress, don't start a new one.
-    if (isPlaying) return;
-
-    // Otherwise, start processing the queue.
-    isPlaying = true;
-    processNextMove();
+function playMove() {
+    // If nothing is currently playing, start the playback.
+    if (!isPlaying) {
+        isPlaying = true;
+        processNextMove();
+    }
 }
 
 function processNextMove() {
-    if (moveBuffer.length === 0) {
+    // If we've played all moves in the list, reset and exit.
+    if (currentIndex >= prevMoves.length) {
+        twistyPlayer.tempoScale = 2;
         isPlaying = false;
         return;
     }
 
-    // Get the next move from the buffer.
-    const nextMove = moveBuffer.shift();
+    // Get the next move using the current index.
+    const nextMove = prevMoves[currentIndex];
+    console.log("[Playing]: ", { nextMove, currentIndex });
+    currentIndex++;
+
+    // Calculate how many moves remain and adjust the tempo accordingly.
+    const remaining = prevMoves.length - currentIndex;
+    const scale = getTempoScale(remaining);
+    twistyPlayer.tempoScale = scale;
+
+    console.log({ scale });
 
     // Execute the move.
     twistyPlayer.experimentalAddMove(nextMove);
 
-    // Wait for the animation to finish before processing the next move.
-    setTimeout(processNextMove, 1000);
+    // Set a base delay. When the tempoScale increases, the delay decreases.
+    const baseDelay = 1000;
+    const delay = baseDelay / scale;
+
+    // Schedule the next move.
+    setTimeout(processNextMove, delay);
 }
+
+function mapRange(r1, r2, v1, v2) {
+    return v1 + (v2 - v1) * (r1 / r2);
+}
+
+function getTempoScale(remainingMoves) {
+    // This maps the number of remaining moves (up to 5) to a tempo between 2 and 6.
+    return mapRange(remainingMoves, 5, 2, 6);
+}
+
 
 function handleSliceMoves(move, rawInputs) {
     if (rawInputs.length < 2) {
@@ -282,8 +316,8 @@ function handleSliceMoves(move, rawInputs) {
     let prevMoveRaw = rawInputs[rawInputs.length - 2];
 
     // check if the time between both the moves is less than 5ms 
-    const TIME_DIFF = 5; // MS
-    if (!((currMoveRaw.timeStamp - prevMoveRaw.timeStamp) < TIME_DIFF)) {
+    const TIME_DIFF = 10 * 1000; // MS
+    if ((currMoveRaw.timeStamp - prevMoveRaw.timeStamp) > TIME_DIFF) {
         return move;
     }
 
@@ -321,6 +355,8 @@ function handleSliceMoves(move, rawInputs) {
 
     // remove the last move from the prevMoves
     prevMoves.pop();
+
+    return res;
 }
 
 function findSlice(x, y) {
@@ -339,8 +375,8 @@ function findSlice(x, y) {
         "U'D": "E",
         "FB'": "S",
         "F'B": "S'",
-        "RL'": "M'",
-        "R'L": "M"
+        "RL'": "M",
+        "R'L": "M'"
     }
 
     return sliceCaseMap[x + y];
@@ -391,7 +427,7 @@ function drawCube(cube, container) {
         const index = faceNames.indexOf(faceName);
         const faceletString = (facelets.substring(index * 9, (index + 1) * 9));
 
-        console.log({ faceletString, index, faceName, color: faceColors[faceName] });
+        console.debug({ faceletString, index, faceName, color: faceColors[faceName] });
 
         for (let i = 0; i < 9; i++) {
 
