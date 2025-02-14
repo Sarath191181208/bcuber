@@ -1,33 +1,41 @@
 import * as THREE from "three";
-import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { TrackballControls } from "three/addons/controls/TrackballControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 
 export class RubiksCubeComponent {
     constructor(container = document.body, options = {}) {
         this.container = container;
-        this.width = options.width || (container.clientWidth - 10) || window.innerWidth;
-        this.height = options.height || (container.clientHeight - 10) || window.innerHeight;
+        this.width = options.width || container.clientWidth - 10 || window.innerWidth;
+        this.height =
+            options.height || container.clientHeight - 10 || window.innerHeight;
 
-        // Core three.js objects.
+        // ----------------- Setup Scene, Camera, Renderer -----------------
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x202020);
+        // this.scene.background = new THREE.Color(0x00000000);
 
-        this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 0.1, 100);
+        this.camera = new THREE.PerspectiveCamera(
+            45,
+            this.width / this.height,
+            0.1,
+            100
+        );
         this.camera.position.set(5, 5, 5);
         this.camera.lookAt(0, 0, 0);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.width, this.height);
+        // renderer.setClearColor(0x000000, 0);
         this.container.appendChild(this.renderer.domElement);
 
-        // Trackball Controls.
+        // ----------------- Add Controls -----------------
+        // Trackball Controls
         this.controls = new TrackballControls(this.camera, this.renderer.domElement);
         this.controls.rotateSpeed = 3.0;
         this.controls.zoomSpeed = 0.8;
         this.controls.panSpeed = 2.0;
         this.controls.dynamicDampingFactor = 0.2;
 
-        // Lights.
+        // ----------------- Lights -----------------
         const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
         this.scene.add(ambientLight);
 
@@ -39,13 +47,13 @@ export class RubiksCubeComponent {
         hemiLight.position.set(0, 20, 0);
         this.scene.add(hemiLight);
 
-        // Cube Group & Cubelets.
+        // ----------------- Create Cube Group & Cubelets -----------------
         this.cubeGroup = new THREE.Group();
         this.scene.add(this.cubeGroup);
         this.cubelets = [];
         this._createCube();
 
-        // Move logic.
+        // ----------------- Move Logic -----------------
         this.moveQueue = [];
         this.moveMapping = {
             "R": { axis: "x", layer: 1, angle: -Math.PI / 2 },
@@ -65,7 +73,7 @@ export class RubiksCubeComponent {
             "F2": { axis: "z", layer: 1, angle: -Math.PI },
             "B": { axis: "z", layer: -1, angle: Math.PI / 2 },
             "B'": { axis: "z", layer: -1, angle: -Math.PI / 2 },
-            "B2": { axis: "z", layer: -1, angle: Math.PI },
+            "B2": { axis: "z", layer: -1, angle: Math.PI }
         };
         this.rotatingFlag = false;
         this.currentGroup = null;
@@ -74,35 +82,31 @@ export class RubiksCubeComponent {
         this.rotatedAngle = 0;
         this.rotationSpeed = Math.PI / 100;
 
-        // Gizmo (TransformControls) for orientation.
-        orbit = new OrbitControls(currentCamera, renderer.domElement);
-        orbit.update();
-        orbit.addEventListener('change', render);
-
-        control = new TransformControls(currentCamera, renderer.domElement);
-        control.addEventListener('change', render);
-        control.addEventListener('dragging-changed', function (event) {
-
-            orbit.enabled = !event.value;
-
-        });
-        this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
-        this.transformControls.setSize(20);
+        // ----------------- Transform Controls -----------------
+        this.transformControls = new TransformControls(
+            this.camera,
+            this.renderer.domElement
+        );
+        // Attach to the cube group.
         this.transformControls.attach(this.cubeGroup);
+        // Set mode and a moderate size.
         this.transformControls.setMode("rotate");
-        this.gizmosEnabled = true; // Track state.
+        this.scene.add(this.transformControls.getHelper());
+        this.gizmosEnabled = true;
 
         // Smooth snapping variables.
         this.snappingActive = false;
         this.targetQuaternion = new THREE.Quaternion();
         this.transformControls.addEventListener("mouseDown", () => {
-            this.snappingActive = false; // Cancel any snapping when the user interacts.
+            this.snappingActive = false;
             this.controls.enabled = false;
         });
         this.transformControls.addEventListener("mouseUp", () => {
-            // Calculate nearest snapped rotation.
-            const currentEuler = new THREE.Euler().setFromQuaternion(this.cubeGroup.quaternion, "XYZ");
-            const snapIncrement = THREE.MathUtils.degToRad(15); // Adjust snap increment if desired.
+            const currentEuler = new THREE.Euler().setFromQuaternion(
+                this.cubeGroup.quaternion,
+                "XYZ"
+            );
+            const snapIncrement = THREE.MathUtils.degToRad(15);
             const snappedEuler = new THREE.Euler(
                 Math.round(currentEuler.x / snapIncrement) * snapIncrement,
                 Math.round(currentEuler.y / snapIncrement) * snapIncrement,
@@ -114,7 +118,7 @@ export class RubiksCubeComponent {
             this.controls.enabled = true;
         });
 
-        // Handle resizing.
+        // ----------------- Handle Window Resize -----------------
         window.addEventListener("resize", () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
@@ -125,27 +129,26 @@ export class RubiksCubeComponent {
         this._animate();
     }
 
-    // --------------------- Cube Creation ---------------------
+    // ----------------- Cube Creation -----------------
     _createCube() {
         const cubeSize = 0.95;
         const gap = 0.1;
         const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
 
-        // Helper: create materials for each face based on position.
+        // Helper: Create materials for each face based on position.
         const createCubeletMaterials = (x, y, z) => [
             new THREE.MeshBasicMaterial({ color: x === 1 ? 0xE9573F : 0x222222 }), // Right: Red
             new THREE.MeshBasicMaterial({ color: x === -1 ? 0xF2C45F : 0x222222 }), // Left: Orange
             new THREE.MeshBasicMaterial({ color: y === 1 ? 0xF5F5F5 : 0x222222 }),  // Top: White
             new THREE.MeshBasicMaterial({ color: y === -1 ? 0xF8F384 : 0x222222 }), // Bottom: Yellow
             new THREE.MeshBasicMaterial({ color: z === 1 ? 0x48C991 : 0x222222 }),  // Front: Green
-            new THREE.MeshBasicMaterial({ color: z === -1 ? 0x5DADE2 : 0x222222 }), // Back: Blue
+            new THREE.MeshBasicMaterial({ color: z === -1 ? 0x5DADE2 : 0x222222 })   // Back: Blue
         ];
 
-        // Create cubelets (skipping the center if desired).
+        // Create cubelets (skipping the center piece if desired).
         for (let x = -1; x <= 1; x++) {
             for (let y = -1; y <= 1; y++) {
                 for (let z = -1; z <= 1; z++) {
-                    // Optionally skip the center piece.
                     if (x === 0 && y === 0 && z === 0) continue;
                     const materials = createCubeletMaterials(x, y, z);
                     const cubelet = new THREE.Mesh(geometry, materials);
@@ -158,7 +161,7 @@ export class RubiksCubeComponent {
                     this.cubeGroup.add(cubelet);
                     this.cubelets.push(cubelet);
 
-                    // Add a subtle black outline.
+                    // Add an outline for better visibility.
                     const edges = new THREE.EdgesGeometry(geometry);
                     const line = new THREE.LineSegments(
                         edges,
@@ -170,7 +173,7 @@ export class RubiksCubeComponent {
         }
     }
 
-    // --------------------- Animation Loop ---------------------
+    // ----------------- Animation Loop -----------------
     _animate = () => {
         requestAnimationFrame(this._animate);
         this.controls.update();
@@ -183,7 +186,8 @@ export class RubiksCubeComponent {
 
         // If a move is in progress, rotate the affected cubelets.
         if (this.rotatingFlag && this.currentGroup) {
-            let deltaAngle = this.targetAngle > 0 ? this.rotationSpeed : -this.rotationSpeed;
+            let deltaAngle =
+                this.targetAngle > 0 ? this.rotationSpeed : -this.rotationSpeed;
             if (this.targetAngle > 0) {
                 if (this.rotatedAngle + deltaAngle > this.targetAngle) {
                     deltaAngle = this.targetAngle - this.rotatedAngle;
@@ -225,11 +229,14 @@ export class RubiksCubeComponent {
         this.renderer.render(this.scene, this.camera);
     };
 
-    // --------------------- Face Move Helpers ---------------------
+    // ----------------- Face Move Helpers -----------------
     _rotateLogical(pos, axis, angle) {
-        const axisVec = axis === "x" ? new THREE.Vector3(1, 0, 0)
-            : axis === "y" ? new THREE.Vector3(0, 1, 0)
-                : new THREE.Vector3(0, 0, 1);
+        const axisVec =
+            axis === "x"
+                ? new THREE.Vector3(1, 0, 0)
+                : axis === "y"
+                    ? new THREE.Vector3(0, 1, 0)
+                    : new THREE.Vector3(0, 0, 1);
         const newPos = pos.clone();
         newPos.applyAxisAngle(axisVec, angle);
         newPos.x = Math.round(newPos.x);
@@ -258,11 +265,9 @@ export class RubiksCubeComponent {
         this.rotatedAngle = 0;
     }
 
-    // --------------------- Public Methods ---------------------
-
+    // ----------------- Public Methods -----------------
     /**
-     * Submit a string of moves (e.g., "R U R' U2") to animate.
-     * Only valid moves (as defined in moveMapping) are queued.
+     * Queue a string of moves (e.g., "R U R' U2") to animate.
      */
     addMoves(movesStr) {
         const tokens = movesStr.trim().split(/\s+/);
@@ -274,13 +279,11 @@ export class RubiksCubeComponent {
     }
 
     /**
-     * Toggle the visibility and interactivity of the orientation gizmo.
-     * @param {boolean} show - If true, the gizmo is enabled; if false, it is hidden.
+     * Toggle the visibility/interactivity of the orientation gizmo.
      */
     toggleGizmos(show) {
         this.gizmosEnabled = show;
         this.transformControls.visible = show;
-        // Optionally detach if hiding.
         if (!show) {
             this.transformControls.detach();
         } else {
@@ -294,7 +297,6 @@ export class RubiksCubeComponent {
     resetCube() {
         this.cubeGroup.rotation.set(0, 0, 0);
         this.cubeGroup.quaternion.set(0, 0, 0, 1);
-        // Reattach to update the transform gizmo.
         if (this.gizmosEnabled) {
             this.transformControls.attach(this.cubeGroup);
         }
