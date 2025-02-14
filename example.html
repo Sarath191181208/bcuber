@@ -14,7 +14,7 @@
       display: block;
     }
 
-    /* Simple controls overlay */
+    /* Controls overlay */
     #controls {
       position: absolute;
       top: 10px;
@@ -33,7 +33,7 @@
 </head>
 
 <body>
-  <!-- Controls overlay for inputting moves -->
+  <!-- Controls overlay for entering moves -->
   <div id="controls">
     <input type="text" id="moveInput" placeholder="Enter moves e.g. R U R' U'" />
     <button id="submitMoves">Submit</button>
@@ -43,7 +43,6 @@
   </div>
 
   <script type="module">
-    // Import Three.js and OrbitControls.
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js';
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.124/examples/jsm/controls/OrbitControls.js';
 
@@ -72,7 +71,7 @@
     scene.add(directionalLight);
 
     // ----- CREATE THE RUBIK'S CUBE -----
-    // All cubelets are children of cubeGroup so that moves are performed in its local space.
+    // All cubelets are added as children of cubeGroup for moves in its local space.
     const cubeGroup = new THREE.Group();
     scene.add(cubeGroup);
 
@@ -80,8 +79,7 @@
     const gap = 0.05;      // gap between cubelets
     const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
 
-    // Create materials for each face.
-    // Outer faces get their color; inner faces use a dark gray.
+    // Function to create materials for a cubelet
     function createCubeletMaterials(x, y, z) {
       return [
         new THREE.MeshBasicMaterial({ color: (x === 1 ? 0x00ff00 : 0x222222) }), // right (green)
@@ -89,16 +87,16 @@
         new THREE.MeshBasicMaterial({ color: (y === 1 ? 0xffffff : 0x222222) }),  // top (white)
         new THREE.MeshBasicMaterial({ color: (y === -1 ? 0xffff00 : 0x222222) }), // bottom (yellow)
         new THREE.MeshBasicMaterial({ color: (z === 1 ? 0xff0000 : 0x222222) }),  // front (red)
-        new THREE.MeshBasicMaterial({ color: (z === -1 ? 0xffa500 : 0x222222) })  // back (orange)
+        new THREE.MeshBasicMaterial({ color: (z === -1 ? 0xffa500 : 0x222222) })   // back (orange)
       ];
     }
 
-    // Create cubelets in a 3×3×3 grid (skipping the center cubelet)
+    // Create cubelets in a 3×3×3 grid (skip the center piece)
     const cubelets = [];
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          if (x === 0 && y === 0 && z === 0) continue; // Skip center piece
+          if (x === 0 && y === 0 && z === 0) continue;
           const materials = createCubeletMaterials(x, y, z);
           const cubelet = new THREE.Mesh(geometry, materials);
           cubelet.position.set(
@@ -106,7 +104,7 @@
             y * (cubeSize + gap),
             z * (cubeSize + gap)
           );
-          // Save a "logical" grid coordinate in userData (used for move selection)
+          // Store a "logical" grid coordinate in userData (used for move selection)
           cubelet.userData.logicalPos = new THREE.Vector3(x, y, z);
           cubeGroup.add(cubelet);
           cubelets.push(cubelet);
@@ -115,9 +113,8 @@
     }
 
     // ----- MOVE QUEUE & MOVE MAPPING -----
-    // The moveMapping defines the axis, which layer to rotate, and the angle (in radians)
-    // for standard cube moves. (Note: The signs are chosen so that the moves are visually
-    // consistent when looking head-on at each face.)
+    // The moveMapping defines, for each move, the rotation axis, the layer (grid value) to rotate,
+    // and the angle (in radians) by which the layer should rotate.
     const moveQueue = [];
     const moveMapping = {
       "R": { axis: "x", layer: 1, angle: -Math.PI / 2 },
@@ -140,9 +137,10 @@
       "B2": { axis: "z", layer: -1, angle: Math.PI }
     };
 
-    // ----- UTILITY: Rotate Logical Position
-    // This function rotates a given logical coordinate around the given axis by the given angle,
-    // then rounds the result to ensure the values remain -1, 0, or 1.
+    // ----- UTILITY: Rotate Logical Position -----
+    // This helper rotates a given logical coordinate (stored as a THREE.Vector3)
+    // around the specified axis by the given angle, and then rounds the result
+    // so that the coordinates remain -1, 0, or 1.
     function rotateLogical(pos, axis, angle) {
       let axisVec;
       if (axis === 'x') axisVec = new THREE.Vector3(1, 0, 0);
@@ -157,30 +155,30 @@
     }
 
     // ----- MOVE ANIMATION VARIABLES -----
-    let rotating = false;       // whether a move is in progress
-    let currentGroup = null;    // temporary group for the moving layer
-    let rotationAxis = null;    // 'x', 'y', or 'z'
-    let targetAngle = 0;        // total rotation (radians) for the move
-    let rotatedAngle = 0;       // amount rotated so far in the current move
+    let rotatingFlag = false;       // whether a move is in progress
+    let currentGroup = null;        // temporary group for the moving layer
+    let rotationAxis = null;        // 'x', 'y', or 'z'
+    let targetAngle = 0;            // total rotation (in radians) for the move
+    let rotatedAngle = 0;           // accumulated rotation so far in the current move
     const rotationSpeed = Math.PI / 100; // rotation increment per frame
 
     // Start a move given a move object (from moveMapping)
     function startMove(moveObj) {
-      rotating = true;
+      rotatingFlag = true;
       rotationAxis = moveObj.axis;
       targetAngle = moveObj.angle;
       currentGroup = new THREE.Group();
       cubeGroup.add(currentGroup);
       const threshold = 0.1;
       const cubesToRotate = [];
-      // Select cubelets whose logical coordinate (in the given axis) matches the move’s layer.
+      // Select cubelets whose logical coordinate (in the given axis) matches the move's layer.
       for (const cube of cubelets) {
         const pos = cube.userData.logicalPos;
         if (Math.abs(pos[rotationAxis] - moveObj.layer) < threshold) {
           cubesToRotate.push(cube);
         }
       }
-      // Reparent selected cubelets into the temporary group.
+      // Reparent the selected cubelets into the temporary group.
       for (const cube of cubesToRotate) {
         currentGroup.add(cube);
       }
@@ -190,7 +188,6 @@
     // ----- HANDLE MOVE INPUT -----
     document.getElementById("submitMoves").addEventListener("click", () => {
       const input = document.getElementById("moveInput").value;
-      // Split input by whitespace (you can enter moves like: R U R' U')
       const tokens = input.trim().split(/\s+/);
       for (const token of tokens) {
         if (moveMapping[token]) {
@@ -205,31 +202,41 @@
       requestAnimationFrame(animate);
       controls.update();
 
-      // If no move is in progress and the queue has moves, start the next move.
-      if (!rotating && moveQueue.length > 0) {
+      // If no move is in progress and there are moves in the queue, start the next move.
+      if (!rotatingFlag && moveQueue.length > 0) {
         const nextMove = moveQueue.shift();
         startMove(nextMove);
       }
 
       // Animate the current move if one is in progress.
-      if (rotating && currentGroup) {
-        let deltaAngle = rotationSpeed;
-        if (Math.abs(rotatedAngle + deltaAngle) > Math.abs(targetAngle)) {
-          deltaAngle = targetAngle - rotatedAngle;
+      if (rotatingFlag && currentGroup) {
+        // Set deltaAngle with proper sign.
+        let deltaAngle = targetAngle > 0 ? rotationSpeed : -rotationSpeed;
+        // Overshoot check in a sign-aware manner.
+        if (targetAngle > 0) {
+          if (rotatedAngle + deltaAngle > targetAngle) {
+            deltaAngle = targetAngle - rotatedAngle;
+          }
+        } else {
+          if (rotatedAngle + deltaAngle < targetAngle) {
+            deltaAngle = targetAngle - rotatedAngle;
+          }
         }
         rotatedAngle += deltaAngle;
         currentGroup.rotation[rotationAxis] += deltaAngle;
+
+        // If the move is complete:
         if (Math.abs(rotatedAngle) >= Math.abs(targetAngle) - 0.0001) {
           currentGroup.updateMatrixWorld(true);
           const children = currentGroup.children.slice();
-          // Update each cubelet’s logical coordinate using our helper.
+          // Update the logical coordinate for each cubelet.
           for (const cube of children) {
-            cubeGroup.attach(cube); // reparent back while preserving world transform
+            cubeGroup.attach(cube); // Reparent back to cubeGroup, preserving world transform.
             cube.userData.logicalPos = rotateLogical(cube.userData.logicalPos, rotationAxis, targetAngle);
           }
           cubeGroup.remove(currentGroup);
           currentGroup = null;
-          rotating = false;
+          rotatingFlag = false;
         }
       }
 
