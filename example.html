@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Rubik's Cube with Move Input & Free Camera (White Up, Green Front)</title>
+  <title>Rounded Rubik's Cube (White Up, Green Front with Custom Colors)</title>
   <style>
     body {
       margin: 0;
@@ -33,7 +33,7 @@
 </head>
 
 <body>
-  <!-- Controls overlay for entering moves -->
+  <!-- Controls overlay for move input -->
   <div id="controls">
     <input type="text" id="moveInput" placeholder="Enter moves e.g. R U R' U'" />
     <button id="submitMoves">Submit</button>
@@ -46,54 +46,87 @@
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js';
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.124/examples/jsm/controls/OrbitControls.js';
 
-    // ----- SETUP SCENE, CAMERA, AND RENDERER -----
+    // ------------------ Helper: Create Rounded Cube Geometry ------------------
+    // This function creates a BoxGeometry with subdivisions and then "rounds" the vertices.
+    // Parameters:
+    //   width, height, depth – dimensions of the cube
+    //   radius – how rounded the edges should be
+    //   segments – number of subdivisions per edge (higher = smoother rounding)
+    function createRoundedCubeGeometry(width, height, depth, radius, segments) {
+      segments = segments || 4;
+      // Create a subdivided BoxGeometry.
+      const geometry = new THREE.BoxGeometry(width, height, depth, segments, segments, segments);
+      const posAttr = geometry.attributes.position;
+      // Pre-calculate half-dimensions.
+      const halfW = width / 2, halfH = height / 2, halfD = depth / 2;
+      for (let i = 0; i < posAttr.count; i++) {
+        let x = posAttr.getX(i);
+        let y = posAttr.getY(i);
+        let z = posAttr.getZ(i);
+        // For each axis, clamp the coordinate to the inner box region.
+        const ox = THREE.MathUtils.clamp(x, -halfW + radius, halfW - radius);
+        const oy = THREE.MathUtils.clamp(y, -halfH + radius, halfH - radius);
+        const oz = THREE.MathUtils.clamp(z, -halfD + radius, halfD - radius);
+        const dx = x - ox, dy = y - oy, dz = z - oz;
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len > 0) {
+          const t = radius / len;
+          x = ox + dx * t;
+          y = oy + dy * t;
+          z = oz + dz * t;
+          posAttr.setXYZ(i, x, y, z);
+        }
+      }
+      posAttr.needsUpdate = true;
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    // --------------------- SETUP SCENE, CAMERA, RENDERER ---------------------
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x202020);
-
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(5, 5, 5);
     camera.lookAt(0, 0, 0);
-
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // ----- ENABLE ORBIT CONTROLS -----
+    // ------------------------ ORBIT CONTROLS ------------------------
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
-    // ----- ADD LIGHTING -----
+    // -------------------------- LIGHTING --------------------------
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
 
-    // ----- CREATE THE RUBIK'S CUBE -----
-    // All cubelets are added as children of cubeGroup (moves are done in its local space).
+    // ----------------------- CREATE THE RUBIK'S CUBE -----------------------
+    // Our color scheme (assuming white on top, green in front):
+    // Right (x=1): Red (#E9573F)
+    // Left (x=-1): Orange (#F2C45F)
+    // Top (y=1): White (#F5F5F5)
+    // Bottom (y=-1): Yellow (#F8F384)
+    // Front (z=1): Green (#48C991)
+    // Back (z=-1): Blue (#5DADE2)
     const cubeGroup = new THREE.Group();
     scene.add(cubeGroup);
+    const cubeSize = 0.95;
+    const gap = 0.05;
+    // Instead of using BoxGeometry, use our custom rounded cube geometry.
+    const geometryRounded = createRoundedCubeGeometry(cubeSize, cubeSize, cubeSize, 0.1, 4);
 
-    const cubeSize = 0.95; // size of each mini-cube
-    const gap = 0.05;      // gap between cubelets
-    const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-
-    // Create cubelet materials using our new color scheme:
-    // Right face (x === 1): Red
-    // Left face (x === -1): Orange
-    // Top face (y === 1): White
-    // Bottom face (y === -1): Yellow
-    // Front face (z === 1): Green
-    // Back face (z === -1): Blue
     function createCubeletMaterials(x, y, z) {
       return [
-        new THREE.MeshBasicMaterial({ color: (x === 1 ? 0xff0000 : 0x222222) }), // Right: Red
-        new THREE.MeshBasicMaterial({ color: (x === -1 ? 0xffa500 : 0x222222) }), // Left: Orange
-        new THREE.MeshBasicMaterial({ color: (y === 1 ? 0xffffff : 0x222222) }),  // Top: White
-        new THREE.MeshBasicMaterial({ color: (y === -1 ? 0xffff00 : 0x222222) }), // Bottom: Yellow
-        new THREE.MeshBasicMaterial({ color: (z === 1 ? 0x00ff00 : 0x222222) }),  // Front: Green
-        new THREE.MeshBasicMaterial({ color: (z === -1 ? 0x0000ff : 0x222222) })   // Back: Blue
+        new THREE.MeshBasicMaterial({ color: (x === 1 ? 0xE9573F : 0x222222) }), // Right: Red
+        new THREE.MeshBasicMaterial({ color: (x === -1 ? 0xF2C45F : 0x222222) }), // Left: Orange
+        new THREE.MeshBasicMaterial({ color: (y === 1 ? 0xF5F5F5 : 0x222222) }),  // Top: White
+        new THREE.MeshBasicMaterial({ color: (y === -1 ? 0xF8F384 : 0x222222) }), // Bottom: Yellow
+        new THREE.MeshBasicMaterial({ color: (z === 1 ? 0x48C991 : 0x222222) }),  // Front: Green
+        new THREE.MeshBasicMaterial({ color: (z === -1 ? 0x5DADE2 : 0x222222) })   // Back: Blue
       ];
     }
 
@@ -104,13 +137,14 @@
         for (let z = -1; z <= 1; z++) {
           if (x === 0 && y === 0 && z === 0) continue;
           const materials = createCubeletMaterials(x, y, z);
-          const cubelet = new THREE.Mesh(geometry, materials);
+          // Use our rounded geometry for each cubelet.
+          const cubelet = new THREE.Mesh(geometryRounded, materials);
           cubelet.position.set(
             x * (cubeSize + gap),
             y * (cubeSize + gap),
             z * (cubeSize + gap)
           );
-          // Store the "logical" grid coordinate (used for move selection)
+          // Save the "logical" grid coordinate (for move selection) in userData.
           cubelet.userData.logicalPos = new THREE.Vector3(x, y, z);
           cubeGroup.add(cubelet);
           cubelets.push(cubelet);
@@ -118,15 +152,14 @@
       }
     }
 
-    // ----- MOVE QUEUE & MOVE MAPPING -----
-    // The moveMapping defines for each move:
-    // - the rotation axis,
-    // - which layer (grid value) to rotate, and
-    // - the rotation angle (in radians).
-    // Using our coordinate system:
-    // y positive is Up (white), z positive is Front (green),
-    // x positive is Right (red), x negative is Left (orange),
-    // z negative is Back (blue), y negative is Down (yellow).
+    // --------------------- MOVE QUEUE & MOVE MAPPING ---------------------
+    // Coordinate system:
+    //   y positive: Up (white)
+    //   y negative: Down (yellow)
+    //   z positive: Front (green)
+    //   z negative: Back (blue)
+    //   x positive: Right (red)
+    //   x negative: Left (orange)
     const moveQueue = [];
     const moveMapping = {
       "R": { axis: "x", layer: 1, angle: -Math.PI / 2 },
@@ -149,9 +182,7 @@
       "B2": { axis: "z", layer: -1, angle: Math.PI }
     };
 
-    // ----- UTILITY: Rotate Logical Position -----
-    // This helper rotates a given logical coordinate (THREE.Vector3) around the specified axis by the given angle.
-    // The result is then rounded to keep the coordinate values to -1, 0, or 1.
+    // --------------------- UTILITY: Rotate Logical Position ---------------------
     function rotateLogical(pos, axis, angle) {
       let axisVec;
       if (axis === 'x') axisVec = new THREE.Vector3(1, 0, 0);
@@ -165,15 +196,14 @@
       return newPos;
     }
 
-    // ----- MOVE ANIMATION VARIABLES -----
-    let rotatingFlag = false;       // whether a move is in progress
-    let currentGroup = null;        // temporary group for the moving layer
+    // --------------------- MOVE ANIMATION VARIABLES ---------------------
+    let rotatingFlag = false;       // Whether a move is in progress
+    let currentGroup = null;        // Temporary group for the moving layer
     let rotationAxis = null;        // 'x', 'y', or 'z'
-    let targetAngle = 0;            // total rotation (radians) for the move
-    let rotatedAngle = 0;           // accumulated rotation so far in the current move
-    const rotationSpeed = Math.PI / 100; // rotation increment per frame
+    let targetAngle = 0;            // Total rotation (radians) for the move
+    let rotatedAngle = 0;           // Accumulated rotation so far in the current move
+    const rotationSpeed = Math.PI / 100; // Rotation increment per frame
 
-    // Start a move given a move object (from moveMapping)
     function startMove(moveObj) {
       rotatingFlag = true;
       rotationAxis = moveObj.axis;
@@ -182,21 +212,19 @@
       cubeGroup.add(currentGroup);
       const threshold = 0.1;
       const cubesToRotate = [];
-      // Select cubelets whose logical coordinate (in the given axis) matches the move's layer.
       for (const cube of cubelets) {
         const pos = cube.userData.logicalPos;
         if (Math.abs(pos[rotationAxis] - moveObj.layer) < threshold) {
           cubesToRotate.push(cube);
         }
       }
-      // Reparent the selected cubelets into the temporary group.
       for (const cube of cubesToRotate) {
         currentGroup.add(cube);
       }
       rotatedAngle = 0;
     }
 
-    // ----- HANDLE MOVE INPUT -----
+    // --------------------- HANDLE MOVE INPUT ---------------------
     document.getElementById("submitMoves").addEventListener("click", () => {
       const input = document.getElementById("moveInput").value;
       const tokens = input.trim().split(/\s+/);
@@ -208,22 +236,18 @@
       document.getElementById("moveInput").value = "";
     });
 
-    // ----- MAIN ANIMATION LOOP -----
+    // --------------------- MAIN ANIMATION LOOP ---------------------
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
 
-      // If no move is in progress and there are moves in the queue, start the next move.
       if (!rotatingFlag && moveQueue.length > 0) {
         const nextMove = moveQueue.shift();
         startMove(nextMove);
       }
 
-      // Animate the current move if one is in progress.
       if (rotatingFlag && currentGroup) {
-        // Set deltaAngle with proper sign.
         let deltaAngle = targetAngle > 0 ? rotationSpeed : -rotationSpeed;
-        // Overshoot check (sign-aware).
         if (targetAngle > 0) {
           if (rotatedAngle + deltaAngle > targetAngle) {
             deltaAngle = targetAngle - rotatedAngle;
@@ -236,13 +260,11 @@
         rotatedAngle += deltaAngle;
         currentGroup.rotation[rotationAxis] += deltaAngle;
 
-        // If the move is complete:
         if (Math.abs(rotatedAngle) >= Math.abs(targetAngle) - 0.0001) {
           currentGroup.updateMatrixWorld(true);
           const children = currentGroup.children.slice();
-          // Update the logical coordinate for each cubelet.
           for (const cube of children) {
-            cubeGroup.attach(cube); // Reparent back to cubeGroup, preserving world transform.
+            cubeGroup.attach(cube);
             cube.userData.logicalPos = rotateLogical(cube.userData.logicalPos, rotationAxis, targetAngle);
           }
           cubeGroup.remove(currentGroup);
@@ -255,7 +277,7 @@
     }
     animate();
 
-    // ----- HANDLE WINDOW RESIZE -----
+    // --------------------- HANDLE WINDOW RESIZE ---------------------
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
