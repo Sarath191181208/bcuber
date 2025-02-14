@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Animated Rubik's Cube with Three.js</title>
+  <title>Animated Rubik's Cube with Accumulated Rotations</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- We use only the module import -->
+  <!-- Use only the module import -->
   <script type="module">
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js';
 
@@ -40,9 +40,7 @@
     const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
 
     // Function to create an array of 6 materials for each cubelet.
-    // For a standard Rubik’s cube, we color the outer faces:
-    // right: green, left: blue, top: white, bottom: yellow, front: red, back: orange.
-    // If a face is not on the outer side (coordinate ≠ ±1), it will still be given the same color.
+    // Colors: right (green), left (blue), top (white), bottom (yellow), front (red), back (orange).
     function createCubeletMaterials(x, y, z) {
       return [
         new THREE.MeshBasicMaterial({ color: (x === 1 ? 0x00ff00 : 0x222222) }), // right face
@@ -55,11 +53,11 @@
     }
 
     // Create and position the cubelets.
-    // Skip the center cubelet (0,0,0) so that no grey inner piece is ever visible.
+    // (We use a “logical” grid coordinate stored in userData.logicalPos for later layer selection.)
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          if (x === 0 && y === 0 && z === 0) continue; // Skip the center
+          if (x === 0 && y === 0 && z === 0) continue;  // Skip the center cubelet.
           const materials = createCubeletMaterials(x, y, z);
           const cubelet = new THREE.Mesh(geometry, materials);
           cubelet.position.set(
@@ -67,7 +65,7 @@
             y * (cubeSize + gap),
             z * (cubeSize + gap)
           );
-          // Save its logical (grid) position for later layer selection.
+          // Store its grid coordinate.
           cubelet.userData.logicalPos = new THREE.Vector3(x, y, z);
           scene.add(cubelet);
           cubelets.push(cubelet);
@@ -78,9 +76,9 @@
     // ----- ANIMATION VARIABLES FOR LAYER ROTATION -----
     let rotating = false;
     let currentGroup = null;
-    let rotationAxis = null;   // 'x', 'y', or 'z'
-    let targetAngle = 0;       // total angle to rotate (±90°)
-    let rotatedAngle = 0;      // how much we've rotated so far
+    let rotationAxis = null;  // 'x', 'y', or 'z'
+    let targetAngle = 0;      // total angle to rotate (±90°)
+    let rotatedAngle = 0;     // how much we've rotated so far
     const rotationSpeed = Math.PI / 100;  // rotation step per frame
 
     // ----- FUNCTION TO START A RANDOM LAYER ROTATION -----
@@ -88,23 +86,23 @@
       if (rotating) return;
       rotating = true;
 
-      // Randomly choose an axis.
+      // Choose a random axis.
       const axes = ['x', 'y', 'z'];
       rotationAxis = axes[Math.floor(Math.random() * axes.length)];
 
-      // Randomly choose a layer index (-1, 0, or 1).
+      // Choose a random layer index (-1, 0, or 1).
       const layers = [-1, 0, 1];
       const layerIndex = layers[Math.floor(Math.random() * layers.length)];
 
-      // Randomly choose the rotation direction (clockwise or counter-clockwise).
+      // Choose a random rotation direction.
       const direction = Math.random() < 0.5 ? 1 : -1;
       targetAngle = direction * Math.PI / 2;  // 90° rotation
 
-      // Create a temporary group to hold the cubelets in this layer.
+      // Create a temporary group for the cubelets in the chosen layer.
       currentGroup = new THREE.Group();
       scene.add(currentGroup);
 
-      // Select cubelets whose logical coordinate (for the chosen axis) is near the chosen layer.
+      // Select cubelets based on their logical grid coordinate.
       const threshold = 0.1;
       const cubesToRotate = [];
       for (const cubelet of cubelets) {
@@ -114,11 +112,10 @@
         }
       }
 
-      // Remove selected cubelets from the scene and add them to the group.
+      // Move the selected cubelets into the temporary group.
       for (const cube of cubesToRotate) {
         currentGroup.add(cube);
       }
-
       rotatedAngle = 0;
     }
 
@@ -129,26 +126,26 @@
       // (Optional) Slowly rotate the entire scene for a better view.
       scene.rotation.y += 0.005;
 
-      // If a layer is currently rotating, update its rotation.
+      // If a move is in progress, rotate the temporary group.
       if (rotating && currentGroup) {
         let deltaAngle = rotationSpeed;
-        // Make sure we do not overshoot the target angle.
         if (Math.abs(rotatedAngle + deltaAngle) > Math.abs(targetAngle)) {
           deltaAngle = targetAngle - rotatedAngle;
         }
         rotatedAngle += deltaAngle;
         currentGroup.rotation[rotationAxis] += deltaAngle;
 
-        // Once the target 90° rotation is reached…
+        // When the move is complete...
         if (Math.abs(rotatedAngle) >= Math.abs(targetAngle) - 0.0001) {
-          // Update each cubelet’s world transform.
+          // Update world matrices.
           currentGroup.updateMatrixWorld(true);
-          // Detach each cubelet from the group and reattach it to the scene (preserving its world transform).
+          // For each cubelet in the rotating group...
           const children = currentGroup.children.slice(); // copy list
           for (const cube of children) {
+            // Detach the cubelet so its current transform is preserved.
             scene.attach(cube);
 
-            // Update the logical position by applying a 90° rotation in the appropriate plane.
+            // Compute and update its new logical grid coordinate.
             const pos = cube.userData.logicalPos;
             const newPos = pos.clone();
             if (rotationAxis === 'x') {
@@ -177,25 +174,16 @@
               }
             }
             cube.userData.logicalPos = newPos;
-            // Snap the cubelet’s position to its new logical grid coordinate.
-            cube.position.set(
-              newPos.x * (cubeSize + gap),
-              newPos.y * (cubeSize + gap),
-              newPos.z * (cubeSize + gap)
-            );
-            // Reset its rotation so that each cubelet remains axis–aligned.
-            cube.rotation.set(0, 0, 0);
-            // Update the cubelet's materials based on its new logical position.
-            cube.material = createCubeletMaterials(newPos.x, newPos.y, newPos.z);
+            // Notice: We no longer "snap" the cubelet's position or reset its rotation.
+            // The cubelet retains its accumulated transformation.
           }
-
-          // Remove the temporary group and mark the rotation as finished.
+          // Remove the temporary group and mark the move as complete.
           scene.remove(currentGroup);
           currentGroup = null;
           rotating = false;
 
           // Start another random rotation after a short delay.
-          setTimeout(startRandomRotation, 500);
+          setTimeout(startRandomRotation, 3000);
         }
       }
 
