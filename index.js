@@ -1,3 +1,5 @@
+import { mathlib } from "./mathlib.js"
+
 // Constants (defined outside the functions for easy access)
 const QI_YI_SERVICE_UUID = '0000fff0-0000-1000-8000-00805f9b34fb';
 const QI_YI_CHARACTERISTIC_UUID = '0000fff6-0000-1000-8000-00805f9b34fb';
@@ -19,8 +21,6 @@ const SOLVED_FACELET = mathlib.SOLVED_FACELET;
 //     move: R | R' |  L | L' |  U | U' |  D | D' |  F | F' |  B | B'
 // }
 let rawInputs = [];
-
-let prevMoves = [];
 
 let lastTs = 0;
 let batteryLevel = 0;

@@ -1,6 +1,9 @@
 "use strict";
 
-var mathlib = (function() {
+export default mathlib;
+export { mathlib }
+
+var mathlib = (function () {
 	var Cnk = [],
 		fact = [1];
 	for (var i = 0; i < 32; ++i) {
@@ -231,17 +234,17 @@ var mathlib = (function() {
 		this.length = length;
 		this.evenbase = evenbase;
 		if (type == 'p') {
-			this.get = function(arr) {
+			this.get = function (arr) {
 				return getNPerm(arr, this.length, this.evenbase);
 			};
-			this.set = function(arr, idx) {
+			this.set = function (arr, idx) {
 				return setNPerm(arr, idx, this.length, this.evenbase);
 			};
 		} else if (type == 'o') {
-			this.get = function(arr) {
+			this.get = function (arr) {
 				return getNOri(arr, this.length, this.evenbase);
 			};
-			this.set = function(arr, idx) {
+			this.set = function (arr, idx) {
 				return setNOri(arr, idx, this.length, this.evenbase);
 			};
 		} else if (type == 'c') {
@@ -261,10 +264,10 @@ var mathlib = (function() {
 				}
 			}
 			this.x = Math.round(x);
-			this.get = function(arr) {
+			this.get = function (arr) {
 				return getMPerm(arr, this.n, this.cnts.slice(), this.cums);
 			};
-			this.set = function(arr, idx) {
+			this.set = function (arr, idx) {
 				return setMPerm(arr, idx, this.n, this.cnts.slice(), this.x);
 			};
 		} else { // invalid type
@@ -276,7 +279,7 @@ var mathlib = (function() {
 		for (var i = 0; i < facelets.length; i++) {
 			var cubie = facelets[i];
 			var p = perm[i] === undefined ? i : perm[i];
-			if (typeof(cubie) == 'number') {
+			if (typeof (cubie) == 'number') {
 				f[cubie] = ~~(facelets[p] / divcol);
 				continue;
 			}
@@ -399,38 +402,38 @@ var mathlib = (function() {
 
 	CubieCube.SOLVED = new CubieCube();
 
-	CubieCube.EdgeMult = function(a, b, prod) {
+	CubieCube.EdgeMult = function (a, b, prod) {
 		for (var ed = 0; ed < 12; ed++) {
 			prod.ea[ed] = a.ea[b.ea[ed] >> 1] ^ (b.ea[ed] & 1);
 		}
 	};
 
-	CubieCube.CornMult = function(a, b, prod) {
+	CubieCube.CornMult = function (a, b, prod) {
 		for (var corn = 0; corn < 8; corn++) {
 			var ori = ((a.ca[b.ca[corn] & 7] >> 3) + (b.ca[corn] >> 3)) % 3;
 			prod.ca[corn] = a.ca[b.ca[corn] & 7] & 7 | ori << 3;
 		}
 	};
 
-	CubieCube.CubeMult = function(a, b, prod) {
+	CubieCube.CubeMult = function (a, b, prod) {
 		CubieCube.CornMult(a, b, prod);
 		CubieCube.EdgeMult(a, b, prod);
 	};
 
-	CubieCube.CentMult = function(a, b, prod) {
+	CubieCube.CentMult = function (a, b, prod) {
 		prod.ct = [];
 		for (var cent = 0; cent < 6; cent++) {
 			prod.ct[cent] = a.ct[b.ct[cent]];
 		}
 	};
 
-	CubieCube.prototype.init = function(ca, ea) {
+	CubieCube.prototype.init = function (ca, ea) {
 		this.ca = ca.slice();
 		this.ea = ea.slice();
 		return this;
 	};
 
-	CubieCube.prototype.hashCode = function() {
+	CubieCube.prototype.hashCode = function () {
 		var ret = 0;
 		for (var i = 0; i < 20; i++) {
 			ret = 0 | (ret * 31 + (i < 12 ? this.ea[i] : this.ca[i - 12]));
@@ -438,7 +441,7 @@ var mathlib = (function() {
 		return ret;
 	}
 
-	CubieCube.prototype.isEqual = function(c) {
+	CubieCube.prototype.isEqual = function (c) {
 		c = c || CubieCube.SOLVED;
 		for (var i = 0; i < 8; i++) {
 			if (this.ca[i] != c.ca[i]) {
@@ -478,7 +481,7 @@ var mathlib = (function() {
 		[48, 14]  // BR
 	];
 	CubieCube.ctFacelet = [4, 13, 22, 31, 40, 49]; // centers
-	CubieCube.faceMap = (function() {
+	CubieCube.faceMap = (function () {
 		var f = [];
 		for (var c = 0; c < 8; c++) {
 			for (var n = 0; n < 3; n++) {
@@ -492,7 +495,7 @@ var mathlib = (function() {
 		return f;
 	})();
 
-	CubieCube.prototype.toPerm = function(cFacelet, eFacelet, ctFacelet, withOri) {
+	CubieCube.prototype.toPerm = function (cFacelet, eFacelet, ctFacelet, withOri) {
 		cFacelet = cFacelet || CubieCube.cFacelet;
 		eFacelet = eFacelet || CubieCube.eFacelet;
 		ctFacelet = ctFacelet || CubieCube.ctFacelet;
@@ -524,7 +527,7 @@ var mathlib = (function() {
 		return f;
 	}
 
-	CubieCube.prototype.toFaceCube = function(cFacelet, eFacelet, ctFacelet, withOri) {
+	CubieCube.prototype.toFaceCube = function (cFacelet, eFacelet, ctFacelet, withOri) {
 		var perm = this.toPerm(cFacelet, eFacelet, ctFacelet, withOri);
 		var ts = "URFDLB";
 		var f = [];
@@ -534,7 +537,7 @@ var mathlib = (function() {
 		return f.join("");
 	}
 
-	CubieCube.prototype.prettyString = function(withOri) {
+	CubieCube.prototype.prettyString = function (withOri) {
 		var facelet = this.toFaceCube(null, null, null, withOri);
 		var tmp =
 			"        U0U1U2\n" +
@@ -546,13 +549,13 @@ var mathlib = (function() {
 			"        D0D1D2\n" +
 			"        D3D4D5\n" +
 			"        D6D7D8\n";
-		return tmp.replace(/[URFDLB][0-8]/g, function(m) {
+		return tmp.replace(/[URFDLB][0-8]/g, function (m) {
 			var i1 = "URFDLB".indexOf(m[0]);
 			return facelet[i1 * 9 + ~~m[1]] + ' ';
 		});
 	}
 
-	CubieCube.prototype.invFrom = function(cc) {
+	CubieCube.prototype.invFrom = function (cc) {
 		for (var edge = 0; edge < 12; edge++) {
 			this.ea[cc.ea[edge] >> 1] = edge << 1 | cc.ea[edge] & 1;
 		}
@@ -562,7 +565,7 @@ var mathlib = (function() {
 		return this;
 	}
 
-	CubieCube.prototype.fromFacelet = function(facelet, cFacelet, eFacelet) {
+	CubieCube.prototype.fromFacelet = function (facelet, cFacelet, eFacelet) {
 		cFacelet = cFacelet || CubieCube.cFacelet;
 		eFacelet = eFacelet || CubieCube.eFacelet;
 		var count = 0;
@@ -607,7 +610,7 @@ var mathlib = (function() {
 		return this;
 	}
 
-	CubieCube.prototype.verify = function() {
+	CubieCube.prototype.verify = function () {
 		var mask = 0;
 		var sum = 0;
 		var ep = [];
@@ -623,13 +626,13 @@ var mathlib = (function() {
 			cp.push(this.ca[c] & 0x7);
 		}
 		if (mask != 0xfffff || sum % 6 != 0
-				|| getNParity(getNPerm(ep, 12), 12) != getNParity(getNPerm(cp, 8), 8)) {
+			|| getNParity(getNPerm(ep, 12), 12) != getNParity(getNPerm(cp, 8), 8)) {
 			return -1;
 		}
 		return 0;
 	}
 
-	CubieCube.moveCube = (function() {
+	CubieCube.moveCube = (function () {
 		var moveCube = [];
 		for (var i = 0; i < 18; i++) {
 			moveCube[i] = new CubieCube();
@@ -648,7 +651,7 @@ var mathlib = (function() {
 		return moveCube;
 	})();
 
-	CubieCube.rotCube = (function() {
+	CubieCube.rotCube = (function () {
 		var u4 = new CubieCube().init([3, 0, 1, 2, 7, 4, 5, 6], [6, 0, 2, 4, 14, 8, 10, 12, 23, 17, 19, 21]);
 		u4.ct = [0, 5, 1, 3, 2, 4];
 		var f2 = new CubieCube().init([5, 4, 7, 6, 1, 0, 3, 2], [12, 10, 8, 14, 4, 2, 0, 6, 18, 16, 22, 20]);
@@ -727,7 +730,7 @@ var mathlib = (function() {
 		return rotCube;
 	})();
 
-	CubieCube.prototype.edgeCycles = function() {
+	CubieCube.prototype.edgeCycles = function () {
 		var visited = [];
 		var small_cycles = [0, 0, 0];
 		var cycles = 0;
@@ -772,7 +775,7 @@ var mathlib = (function() {
 
 	var CubeMoveRE = /^\s*([URFDLB]w?|[EMSyxz]|2-2[URFDLB]w)(['2]?)(@\d+)?\s*$/;
 	var tmpCubie = new CubieCube();
-	CubieCube.prototype.selfMoveStr = function(moveStr, isInv) {
+	CubieCube.prototype.selfMoveStr = function (moveStr, isInv) {
 		var m = CubeMoveRE.exec(moveStr);
 		if (!m) {
 			return;
@@ -836,7 +839,7 @@ var mathlib = (function() {
 		}
 	}
 
-	CubieCube.prototype.selfConj = function(conj) {
+	CubieCube.prototype.selfConj = function (conj) {
 		if (conj === undefined) {
 			conj = this.ori;
 		}
@@ -847,7 +850,7 @@ var mathlib = (function() {
 		}
 	}
 
-	var minx = (function() {
+	var minx = (function () {
 		var U = 0, R = 1, F = 2, L = 3, BL = 4, BR = 5, DR = 6, DL = 7, DBL = 8, B = 9, DBR = 10, D = 11;
 		var oppFace = [D, DBL, B, DBR, DR, DL, BL, BR, R, F, L, U];
 		var adjFaces = [
@@ -1000,7 +1003,7 @@ var mathlib = (function() {
 
 	var _ = Solver.prototype;
 
-	_.init = function() {
+	_.init = function () {
 		if (this.inited) {
 			return;
 		}
@@ -1033,7 +1036,7 @@ var mathlib = (function() {
 		this.inited = true;
 	}
 
-	_.search = function(state, minl, MAXL) {
+	_.search = function (state, minl, MAXL) {
 		MAXL = (MAXL || 99) + 1;
 		if (!this.inited) {
 			this.init();
@@ -1042,7 +1045,7 @@ var mathlib = (function() {
 		return this.sol;
 	};
 
-	_.toStr = function(sol, move_map, power_map) {
+	_.toStr = function (sol, move_map, power_map) {
 		return sol.map((move) => move_map[move[0]] + power_map[move[1]]).join(' ').replace(/ +/g, ' ');
 	};
 
@@ -1052,22 +1055,22 @@ var mathlib = (function() {
 	// doMove(state) -> newState
 	// if ckmv[last_move] >> cur_move & 1, cur_move is skipped
 	function Searcher(isSolved, getPrun, doMove, N_AXIS, N_POWER, ckmv) {
-		this.isSolved = isSolved || function() { return true; };
+		this.isSolved = isSolved || function () { return true; };
 		this.getPrun = getPrun;
 		this.doMove = doMove;
 		this.N_AXIS = N_AXIS;
 		this.N_POWER = N_POWER;
-		this.ckmv = ckmv || valuedArray(N_AXIS, function(i) { return 1 << i; } );
+		this.ckmv = ckmv || valuedArray(N_AXIS, function (i) { return 1 << i; });
 	}
 
 	_ = Searcher.prototype;
 
-	_.solve = function(idx, minl, MAXL, callback, cost) {
+	_.solve = function (idx, minl, MAXL, callback, cost) {
 		var sols = this.solveMulti([idx], minl, MAXL, callback, cost);
 		return sols == null ? null : sols[0];
 	};
 
-	_.solveMulti = function(idxs, minl, MAXL, callback, cost) {
+	_.solveMulti = function (idxs, minl, MAXL, callback, cost) {
 		this.sidx = 0;
 		this.sol = [];
 		this.length = minl;
@@ -1075,14 +1078,14 @@ var mathlib = (function() {
 		return this.nextMulti(MAXL, callback, cost);
 	};
 
-	_.next = function(MAXL, callback, cost) {
+	_.next = function (MAXL, callback, cost) {
 		var sols = this.nextMulti(MAXL, callback, cost);
 		return sols == null ? null : sols[0];
 	};
 
-	_.nextMulti = function(MAXL, callback, cost) {
+	_.nextMulti = function (MAXL, callback, cost) {
 		this.cost = (cost || 1e9) + 1;
-		this.callback = callback || function() { return true; };
+		this.callback = callback || function () { return true; };
 		for (; this.length <= MAXL; this.length++) {
 			for (; this.sidx < this.idxs.length; this.sidx++) {
 				if (this.idaSearch(this.idxs[this.sidx], this.length, 0, -1, this.sol) == 0) {
@@ -1094,7 +1097,7 @@ var mathlib = (function() {
 		return null;
 	}
 
-	_.idaSearch = function(idx, maxl, depth, lm, sol) {
+	_.idaSearch = function (idx, maxl, depth, lm, sol) {
 		if (--this.cost <= 0) {
 			return 0;
 		}
@@ -1153,7 +1156,7 @@ var mathlib = (function() {
 
 	_ = gSolver.prototype;
 
-	_.updatePrun = function(targetDepth) {
+	_.updatePrun = function (targetDepth) {
 		targetDepth = targetDepth === undefined ? this.prunDepth + 1 : targetDepth;
 		for (var depth = this.prunDepth + 1; depth <= targetDepth; depth++) {
 			if (this.prevSize >= this.MAX_PRUN_SIZE) {
@@ -1182,7 +1185,7 @@ var mathlib = (function() {
 		}
 	};
 
-	_.updatePrunBFS = function(fromDepth) {
+	_.updatePrunBFS = function (fromDepth) {
 		if (this.toUpdateArr == null) {
 			this.toUpdateArr = [];
 			for (var state in this.prunTable) {
@@ -1212,7 +1215,7 @@ var mathlib = (function() {
 		this.toUpdateArr = null;
 	};
 
-	_.search = function(state, minl, MAXL) {
+	_.search = function (state, minl, MAXL) {
 		this.sol = [];
 		this.subOpt = false;
 		this.state = state;
@@ -1221,7 +1224,7 @@ var mathlib = (function() {
 		return this.searchNext(MAXL);
 	};
 
-	_.searchNext = function(MAXL, cost) {
+	_.searchNext = function (MAXL, cost) {
 		MAXL = (MAXL + 1) || 99;
 		this.prevSolStr = this.solArr ? this.solArr.join(',') : null;
 		this.solArr = null;
@@ -1238,12 +1241,12 @@ var mathlib = (function() {
 		return this.solArr;
 	}
 
-	_.getPruning = function(state) {
+	_.getPruning = function (state) {
 		var prun = this.prunTable[state];
 		return prun === undefined ? this.prunDepth + 1 : prun;
 	};
 
-	_.idaSearch = function(state, maxl, lm, depth) {
+	_.idaSearch = function (state, maxl, lm, depth) {
 		if (this.getPruning(state) > maxl) {
 			return false;
 		}
@@ -1294,7 +1297,7 @@ var mathlib = (function() {
 		return false;
 	};
 
-	var randGen = (function() {
+	var randGen = (function () {
 		var rndFunc;
 		var rndCnt;
 		var seedStr; // '' + new Date().getTime();

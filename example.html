@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cubing.js Example</title>
+<style>
+  #cube {
+    width: 300px;
+    height: 300px;
+  }
+</style>
+</head>
+<body>
+
+<div id="cube"></div>
+
+<script src="./mathlib.js" ></script>
+<script type="module">
+
+  import { Twisty } from 'https://cdn.cubing.net/v0/js/cubing/twisty';
+
+  const cubeElement = document.getElementById('cube');
+  const cubieCube = new mathlib.CubieCube();
+  const twisty = new Twisty(cubeElement);
+
+  // Initial render
+  twisty.render(cubieCube);
+
+  // Example moves (you can customize these)
+  const moves = ['R', 'U', 'R\'', 'U\''];
+
+  async function animateMoves() {
+    for (const move of moves) {
+      cubieCube.move(move);
+      await twisty.animate(cubieCube, 500); // 500ms animation delay
+    }
+    console.log("Animation complete!");
+  }
+
+  animateMoves();
+
+
+  // Example of scrambling the cube and then animating the solve (replace with your solve algorithm)
+  const scramble = "R U R' U' F B' R U R' U'"; // Example scramble
+  cubieCube.do(scramble);
+  twisty.render(cubieCube); // Render the scrambled cube
+
+  // Example Solve (replace with your actual solve logic)
+  const solve = "U R U' L' U R' U' L"; // Example solve (not a real solve, just for demonstration)
+
+  async function animateSolve() {
+    cubieCube.do(solve); // Apply the solve
+    await twisty.animate(cubieCube, 500);
+    console.log("Solve Animation Complete (Example)!");
+  }
+
+  // You can call animateSolve() after scrambling or after a delay.
+  // setTimeout(animateSolve, 2000); // Start solve animation after 2 seconds.
+
+</script>
+
+</body>
+</html>
