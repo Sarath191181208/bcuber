@@ -1,19 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <title>Animated Rubik's Cube with Accumulated Rotations</title>
+  <title>Rubik's Cube with Move Input & Free Camera</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* Simple controls overlay */
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+      font-family: sans-serif;
+    }
+
+    #moveInput {
+      width: 300px;
+    }
   </style>
 </head>
-<body>
-  <!-- Use only the module import -->
-  <script type="module">
-    import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js';
 
-    // ----- SETUP SCENE, CAMERA, RENDERER -----
+<body>
+  <!-- Controls overlay for inputting moves -->
+  <div id="controls">
+    <input type="text" id="moveInput" placeholder="Enter moves e.g. R U R' U'" />
+    <button id="submitMoves">Submit</button>
+    <div style="font-size: 0.9em; margin-top: 5px;">
+      Moves supported: R, R', R2, L, L', L2, U, U', U2, D, D', D2, F, F', F2, B, B', B2
+    </div>
+  </div>
+
+  <script type="module">
+    // Import Three.js and OrbitControls.
+    import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.124/examples/jsm/controls/OrbitControls.js';
+
+    // ----- SETUP SCENE, CAMERA, AND RENDERER -----
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x202020);
 
@@ -25,6 +59,11 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    // ----- ENABLE ORBIT CONTROLS FOR FREE CAMERA MOVEMENT -----
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
     // ----- ADD LIGHTING -----
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
@@ -32,32 +71,34 @@
     directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
 
-    // ----- CREATE THE RUBIK'S CUBE PIECES -----
-    // We'll create 26 cubelets (skipping the center) arranged in a 3x3x3 grid.
-    const cubelets = [];
-    const cubeSize = 0.95;  // size of each mini-cube
-    const gap = 0.05;       // gap between cubelets
+    // ----- CREATE THE RUBIK'S CUBE -----
+    // All cubelets are children of cubeGroup so that moves are performed in its local space.
+    const cubeGroup = new THREE.Group();
+    scene.add(cubeGroup);
+
+    const cubeSize = 0.95; // size of each mini-cube
+    const gap = 0.05;      // gap between cubelets
     const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
 
-    // Function to create an array of 6 materials for each cubelet.
-    // Colors: right (green), left (blue), top (white), bottom (yellow), front (red), back (orange).
+    // Create materials for each face.
+    // Outer faces get their color; inner faces use a dark gray.
     function createCubeletMaterials(x, y, z) {
       return [
-        new THREE.MeshBasicMaterial({ color: (x === 1 ? 0x00ff00 : 0x222222) }), // right face
-        new THREE.MeshBasicMaterial({ color: (x === -1 ? 0x0000ff : 0x222222) }), // left face
-        new THREE.MeshBasicMaterial({ color: (y === 1 ? 0xffffff : 0x222222) }), // top face
-        new THREE.MeshBasicMaterial({ color: (y === -1 ? 0xffff00 : 0x222222) }), // bottom face
-        new THREE.MeshBasicMaterial({ color: (z === 1 ? 0xff0000 : 0x222222) }), // front face
-        new THREE.MeshBasicMaterial({ color: (z === -1 ? 0xffa500 : 0x222222) })  // back face
+        new THREE.MeshBasicMaterial({ color: (x === 1 ? 0x00ff00 : 0x222222) }), // right (green)
+        new THREE.MeshBasicMaterial({ color: (x === -1 ? 0x0000ff : 0x222222) }), // left (blue)
+        new THREE.MeshBasicMaterial({ color: (y === 1 ? 0xffffff : 0x222222) }),  // top (white)
+        new THREE.MeshBasicMaterial({ color: (y === -1 ? 0xffff00 : 0x222222) }), // bottom (yellow)
+        new THREE.MeshBasicMaterial({ color: (z === 1 ? 0xff0000 : 0x222222) }),  // front (red)
+        new THREE.MeshBasicMaterial({ color: (z === -1 ? 0xffa500 : 0x222222) })  // back (orange)
       ];
     }
 
-    // Create and position the cubelets.
-    // (We use a “logical” grid coordinate stored in userData.logicalPos for later layer selection.)
+    // Create cubelets in a 3×3×3 grid (skipping the center cubelet)
+    const cubelets = [];
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          if (x === 0 && y === 0 && z === 0) continue;  // Skip the center cubelet.
+          if (x === 0 && y === 0 && z === 0) continue; // Skip center piece
           const materials = createCubeletMaterials(x, y, z);
           const cubelet = new THREE.Mesh(geometry, materials);
           cubelet.position.set(
@@ -65,68 +106,112 @@
             y * (cubeSize + gap),
             z * (cubeSize + gap)
           );
-          // Store its grid coordinate.
+          // Save a "logical" grid coordinate in userData (used for move selection)
           cubelet.userData.logicalPos = new THREE.Vector3(x, y, z);
-          scene.add(cubelet);
+          cubeGroup.add(cubelet);
           cubelets.push(cubelet);
         }
       }
     }
 
-    // ----- ANIMATION VARIABLES FOR LAYER ROTATION -----
-    let rotating = false;
-    let currentGroup = null;
-    let rotationAxis = null;  // 'x', 'y', or 'z'
-    let targetAngle = 0;      // total angle to rotate (±90°)
-    let rotatedAngle = 0;     // how much we've rotated so far
-    const rotationSpeed = Math.PI / 100;  // rotation step per frame
+    // ----- MOVE QUEUE & MOVE MAPPING -----
+    // The moveMapping defines the axis, which layer to rotate, and the angle (in radians)
+    // for standard cube moves. (Note: The signs are chosen so that the moves are visually
+    // consistent when looking head-on at each face.)
+    const moveQueue = [];
+    const moveMapping = {
+      "R": { axis: "x", layer: 1, angle: -Math.PI / 2 },
+      "R'": { axis: "x", layer: 1, angle: Math.PI / 2 },
+      "R2": { axis: "x", layer: 1, angle: -Math.PI },
+      "L": { axis: "x", layer: -1, angle: Math.PI / 2 },
+      "L'": { axis: "x", layer: -1, angle: -Math.PI / 2 },
+      "L2": { axis: "x", layer: -1, angle: Math.PI },
+      "U": { axis: "y", layer: 1, angle: -Math.PI / 2 },
+      "U'": { axis: "y", layer: 1, angle: Math.PI / 2 },
+      "U2": { axis: "y", layer: 1, angle: -Math.PI },
+      "D": { axis: "y", layer: -1, angle: Math.PI / 2 },
+      "D'": { axis: "y", layer: -1, angle: -Math.PI / 2 },
+      "D2": { axis: "y", layer: -1, angle: Math.PI },
+      "F": { axis: "z", layer: 1, angle: -Math.PI / 2 },
+      "F'": { axis: "z", layer: 1, angle: Math.PI / 2 },
+      "F2": { axis: "z", layer: 1, angle: -Math.PI },
+      "B": { axis: "z", layer: -1, angle: Math.PI / 2 },
+      "B'": { axis: "z", layer: -1, angle: -Math.PI / 2 },
+      "B2": { axis: "z", layer: -1, angle: Math.PI }
+    };
 
-    // ----- FUNCTION TO START A RANDOM LAYER ROTATION -----
-    function startRandomRotation() {
-      if (rotating) return;
+    // ----- UTILITY: Rotate Logical Position
+    // This function rotates a given logical coordinate around the given axis by the given angle,
+    // then rounds the result to ensure the values remain -1, 0, or 1.
+    function rotateLogical(pos, axis, angle) {
+      let axisVec;
+      if (axis === 'x') axisVec = new THREE.Vector3(1, 0, 0);
+      else if (axis === 'y') axisVec = new THREE.Vector3(0, 1, 0);
+      else if (axis === 'z') axisVec = new THREE.Vector3(0, 0, 1);
+      let newPos = pos.clone();
+      newPos.applyAxisAngle(axisVec, angle);
+      newPos.x = Math.round(newPos.x);
+      newPos.y = Math.round(newPos.y);
+      newPos.z = Math.round(newPos.z);
+      return newPos;
+    }
+
+    // ----- MOVE ANIMATION VARIABLES -----
+    let rotating = false;       // whether a move is in progress
+    let currentGroup = null;    // temporary group for the moving layer
+    let rotationAxis = null;    // 'x', 'y', or 'z'
+    let targetAngle = 0;        // total rotation (radians) for the move
+    let rotatedAngle = 0;       // amount rotated so far in the current move
+    const rotationSpeed = Math.PI / 100; // rotation increment per frame
+
+    // Start a move given a move object (from moveMapping)
+    function startMove(moveObj) {
       rotating = true;
-
-      // Choose a random axis.
-      const axes = ['x', 'y', 'z'];
-      rotationAxis = axes[Math.floor(Math.random() * axes.length)];
-
-      // Choose a random layer index (-1, 0, or 1).
-      const layers = [-1, 0, 1];
-      const layerIndex = layers[Math.floor(Math.random() * layers.length)];
-
-      // Choose a random rotation direction.
-      const direction = Math.random() < 0.5 ? 1 : -1;
-      targetAngle = direction * Math.PI / 2;  // 90° rotation
-
-      // Create a temporary group for the cubelets in the chosen layer.
+      rotationAxis = moveObj.axis;
+      targetAngle = moveObj.angle;
       currentGroup = new THREE.Group();
-      scene.add(currentGroup);
-
-      // Select cubelets based on their logical grid coordinate.
+      cubeGroup.add(currentGroup);
       const threshold = 0.1;
       const cubesToRotate = [];
-      for (const cubelet of cubelets) {
-        const pos = cubelet.userData.logicalPos;
-        if (Math.abs(pos[rotationAxis] - layerIndex) < threshold) {
-          cubesToRotate.push(cubelet);
+      // Select cubelets whose logical coordinate (in the given axis) matches the move’s layer.
+      for (const cube of cubelets) {
+        const pos = cube.userData.logicalPos;
+        if (Math.abs(pos[rotationAxis] - moveObj.layer) < threshold) {
+          cubesToRotate.push(cube);
         }
       }
-
-      // Move the selected cubelets into the temporary group.
+      // Reparent selected cubelets into the temporary group.
       for (const cube of cubesToRotate) {
         currentGroup.add(cube);
       }
       rotatedAngle = 0;
     }
 
+    // ----- HANDLE MOVE INPUT -----
+    document.getElementById("submitMoves").addEventListener("click", () => {
+      const input = document.getElementById("moveInput").value;
+      // Split input by whitespace (you can enter moves like: R U R' U')
+      const tokens = input.trim().split(/\s+/);
+      for (const token of tokens) {
+        if (moveMapping[token]) {
+          moveQueue.push(moveMapping[token]);
+        }
+      }
+      document.getElementById("moveInput").value = "";
+    });
+
     // ----- MAIN ANIMATION LOOP -----
     function animate() {
       requestAnimationFrame(animate);
+      controls.update();
 
-      // (Optional) Slowly rotate the entire scene for a better view.
-      scene.rotation.y += 0.005;
+      // If no move is in progress and the queue has moves, start the next move.
+      if (!rotating && moveQueue.length > 0) {
+        const nextMove = moveQueue.shift();
+        startMove(nextMove);
+      }
 
-      // If a move is in progress, rotate the temporary group.
+      // Animate the current move if one is in progress.
       if (rotating && currentGroup) {
         let deltaAngle = rotationSpeed;
         if (Math.abs(rotatedAngle + deltaAngle) > Math.abs(targetAngle)) {
@@ -134,72 +219,31 @@
         }
         rotatedAngle += deltaAngle;
         currentGroup.rotation[rotationAxis] += deltaAngle;
-
-        // When the move is complete...
         if (Math.abs(rotatedAngle) >= Math.abs(targetAngle) - 0.0001) {
-          // Update world matrices.
           currentGroup.updateMatrixWorld(true);
-          // For each cubelet in the rotating group...
-          const children = currentGroup.children.slice(); // copy list
+          const children = currentGroup.children.slice();
+          // Update each cubelet’s logical coordinate using our helper.
           for (const cube of children) {
-            // Detach the cubelet so its current transform is preserved.
-            scene.attach(cube);
-
-            // Compute and update its new logical grid coordinate.
-            const pos = cube.userData.logicalPos;
-            const newPos = pos.clone();
-            if (rotationAxis === 'x') {
-              if (targetAngle > 0) {
-                newPos.y = -pos.z;
-                newPos.z = pos.y;
-              } else {
-                newPos.y = pos.z;
-                newPos.z = -pos.y;
-              }
-            } else if (rotationAxis === 'y') {
-              if (targetAngle > 0) {
-                newPos.x = pos.z;
-                newPos.z = -pos.x;
-              } else {
-                newPos.x = -pos.z;
-                newPos.z = pos.x;
-              }
-            } else if (rotationAxis === 'z') {
-              if (targetAngle > 0) {
-                newPos.x = -pos.y;
-                newPos.y = pos.x;
-              } else {
-                newPos.x = pos.y;
-                newPos.y = -pos.x;
-              }
-            }
-            cube.userData.logicalPos = newPos;
-            // Notice: We no longer "snap" the cubelet's position or reset its rotation.
-            // The cubelet retains its accumulated transformation.
+            cubeGroup.attach(cube); // reparent back while preserving world transform
+            cube.userData.logicalPos = rotateLogical(cube.userData.logicalPos, rotationAxis, targetAngle);
           }
-          // Remove the temporary group and mark the move as complete.
-          scene.remove(currentGroup);
+          cubeGroup.remove(currentGroup);
           currentGroup = null;
           rotating = false;
-
-          // Start another random rotation after a short delay.
-          setTimeout(startRandomRotation, 3000);
         }
       }
 
       renderer.render(scene, camera);
     }
-
-    // Start the first rotation after 1 second.
-    setTimeout(startRandomRotation, 1000);
     animate();
 
     // ----- HANDLE WINDOW RESIZE -----
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
 </body>
+
 </html>
