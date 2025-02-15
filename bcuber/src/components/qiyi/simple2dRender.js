@@ -5,7 +5,7 @@
  */
 export function drawFacelet(facelets, renderContainer) {
 
-    if (renderContainer === undefined) {
+    if (renderContainer === undefined || renderContainer === null) {
         console.warn("No render container provided.");
         return;
     }
