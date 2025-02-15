@@ -6,25 +6,19 @@ export class RubiksCubeComponent {
     constructor(container = document.body, options = {}) {
         this.container = container;
         this.width = options.width || container.clientWidth - 10 || window.innerWidth;
-        this.height =
-            options.height || container.clientHeight - 10 || window.innerHeight;
+        this.height = options.height || container.clientHeight - 10 || window.innerHeight;
 
         // ----------------- Setup Scene, Camera, Renderer -----------------
         this.scene = new THREE.Scene();
         // this.scene.background = new THREE.Color(0x00000000);
 
-        this.camera = new THREE.PerspectiveCamera(
-            45,
-            this.width / this.height,
-            0.1,
-            100
-        );
+        this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 0.1, 100);
         this.camera.position.set(5, 5, 5);
         this.camera.lookAt(0, 0, 0);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.width, this.height);
-        // renderer.setClearColor(0x000000, 0);
+        // this.renderer.setClearColor(0x000000, 0);
         this.container.appendChild(this.renderer.domElement);
 
         // ----------------- Add Controls -----------------
@@ -83,10 +77,7 @@ export class RubiksCubeComponent {
         this.rotationSpeed = Math.PI / 100;
 
         // ----------------- Transform Controls -----------------
-        this.transformControls = new TransformControls(
-            this.camera,
-            this.renderer.domElement
-        );
+        this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
         // Attach to the cube group.
         this.transformControls.attach(this.cubeGroup);
         // Set mode and a moderate size.
@@ -102,10 +93,7 @@ export class RubiksCubeComponent {
             this.controls.enabled = false;
         });
         this.transformControls.addEventListener("mouseUp", () => {
-            const currentEuler = new THREE.Euler().setFromQuaternion(
-                this.cubeGroup.quaternion,
-                "XYZ"
-            );
+            const currentEuler = new THREE.Euler().setFromQuaternion(this.cubeGroup.quaternion, "XYZ");
             const snapIncrement = THREE.MathUtils.degToRad(15);
             const snappedEuler = new THREE.Euler(
                 Math.round(currentEuler.x / snapIncrement) * snapIncrement,
@@ -186,8 +174,11 @@ export class RubiksCubeComponent {
 
         // If a move is in progress, rotate the affected cubelets.
         if (this.rotatingFlag && this.currentGroup) {
-            let deltaAngle =
-                this.targetAngle > 0 ? this.rotationSpeed : -this.rotationSpeed;
+            // Increase rotation speed if there are more moves in the queue.
+            const speedMultiplier = 2 + this.moveQueue.length * 0.5;
+            const effectiveSpeed = this.rotationSpeed * speedMultiplier;
+
+            let deltaAngle = this.targetAngle > 0 ? effectiveSpeed : -effectiveSpeed;
             if (this.targetAngle > 0) {
                 if (this.rotatedAngle + deltaAngle > this.targetAngle) {
                     deltaAngle = this.targetAngle - this.rotatedAngle;
