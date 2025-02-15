@@ -3,7 +3,6 @@ import { RubiksCubeComponent } from './components/render-cube.js'
 import { QiYiCubeController } from './components/qiyi/cubeController'
 import { QIYI_CONFIG } from './components/qiyi/config'
 import { randomScrambleForEvent } from 'cubing/scramble'
-import { Alg } from 'cubing/alg'
 import { CubeTimer } from './components/cubeTimer.js'
 import { getF2LPairsSolved } from './components/stageFinder/faceleteF2lChecker.js'
 import { getCrossSolvedColor } from './components/stageFinder/faceletCrossChecker.js'
@@ -12,6 +11,7 @@ import { ScrambleHandler } from './utils/scrambleHandler.js'
 import { selectElement } from './utils/domUtils.js'
 import { CubeSolvingStateEnum, CubeState } from './types.js'
 import { BluetoothConnectedIcon, BluetoothConnectingIcon } from './utils/icons.js'
+import { SolveData, SolveDataTable } from './utils/solveData.js'
 
 const qiyiConnectButton = selectElement('#qiyi-connect-btn')
 const cubeRenderDiv = selectElement('#cube')
@@ -20,11 +20,18 @@ const scrambleButton = selectElement('#scramble-button')
 const scrambleDisplay = selectElement('#scramble-display')
 const timerDisplay = selectElement('#timer-display')
 const checkpointDisplay = selectElement('#checkpoint-view')
+const historyTableContainer = selectElement('#solve-history-view')
+
 const debugCubeContainer = document.querySelector('#debug-cube-container')
 
 
 const timer = new CubeTimer(timerDisplay)
 const scrambleHandler = new ScrambleHandler(scrambleDisplay);
+/**
+* @type {SolveData | null}
+*/
+let solve = null;
+const historyHandler = new SolveDataTable(historyTableContainer)
 
 /**
  * @type {CubeState}
@@ -67,6 +74,9 @@ function onCubeMove(x) {
   // animate the cube 
   cube.addMoves(inputMoveStr)
 
+  // add the move to the solve data for saving
+  inputMoveStr.split(/\s+/).forEach(move => solve?.addMove(move))
+
   if (currentState === CubeState.LIVE) {
     return
   }
@@ -85,6 +95,12 @@ function onCubeMove(x) {
       cubeSolvingState.misc = { f2lSolved: null }
       timer.saveCheckpoint()
       timer.stopTimer()
+
+      // add the solve to the history
+      solve?.cloneFromTimer(timer)
+      historyHandler.addSolve(solve)
+      solve = null
+      historyHandler.render()
     }
 
     // check if the cross is done 
@@ -185,6 +201,7 @@ scrambleButton.addEventListener('click', async () => {
   if (currentState !== CubeState.SCRAMBLING) {
     currentState = CubeState.SCRAMBLING
     const randScramble = await randomScrambleForEvent("333")
+    solve = new SolveData(randScramble.toString())
     scrambleHandler.setScramble(randScramble)
   }
 })

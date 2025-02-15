@@ -33,6 +33,9 @@ export class CubeTimer {
      */
     saveCheckpoint() {
         if (this.startTime) {
+            if(this.segments.length > 1 + 4 + 1 + 1) {
+                throw new Error("Too many checkpoints")
+            }
             // @ts-ignore
             this.segments.push((Date.now() - this.startTime) / 1000)
         }
