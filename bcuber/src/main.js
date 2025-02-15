@@ -5,15 +5,19 @@ import { QIYI_CONFIG } from './components/qiyi/config'
 import { randomScrambleForEvent } from 'cubing/scramble'
 import { Alg } from 'cubing/alg'
 import { CubeTimer } from './components/cubeTimer.js'
-import { getCrossSolvedColor } from './components/faceletChecker.js'
+import { getF2LPairsSolved } from './components/stageFinder/faceleteF2lChecker.js'
+import { getCrossSolvedColor } from './components/stageFinder/faceletCrossChecker.js'
+import { getOLLSolved } from './components/stageFinder/faceletOllChecker.js'
 
 const qiyiConnectButton = selectElement('#qiyi-connect-btn')
 const cubeRenderDiv = selectElement('#cube')
-// const debugCubeContainer = selectElement('#debug-cube-container')
 const toggleGizmosButton = selectElement('#toggle-gizmos-btn')
 const scrambleButton = selectElement('#scramble-button')
 const scrambleDisplay = selectElement('#scramble-display')
 const timerDisplay = selectElement('#timer-display')
+const checkpointDisplay = selectElement('#checkpoint-view')
+
+const debugCubeContainer = document.querySelector('#debug-cube-container')
 
 // We'll store the scramble as an Alg, but also work with an array of moves.
 let scramble = new Alg()
@@ -33,13 +37,33 @@ const CubeState = {
 }
 
 /**
+ * @enum {string}
+ */
+const CubeSolvingState = {
+  SCRAMBLED: "SCRAMBLED",
+  CROSS_SOLVED: "CROSS",
+  F2L: "F2L",
+  OLL: "OLL",
+  PLL: "PLL"
+}
+
+/**
  * @type {CubeState}
  */
 let currentState = CubeState.LIVE
+/**
+ * @type {{color: string | null, state: CubeSolvingState | null, misc: Record<string, any>}}
+ */
+let cubeSolvingState = {
+  color: null,
+  state: null,
+  misc: {},
+}
 
 // Create the cube and controller instances
 const cube = new RubiksCubeComponent(cubeRenderDiv)
-const qiyiHandler = new QiYiCubeController(QIYI_CONFIG, onCubeMove, undefined)
+// @ts-ignore
+const qiyiHandler = new QiYiCubeController(QIYI_CONFIG, onCubeMove, debugCubeContainer)
 
 /**
  * Normalize a move string.
@@ -117,21 +141,64 @@ function onCubeMove(x) {
   cube.addMoves(inputMoveStr)
 
 
-
   if (currentState === CubeState.LIVE) {
     return
   }
 
   if (currentState === CubeState.SOLVING) {
+    // show the timer checkpoitns 
+    const buildCheckpoint = (data) => /*html*/ `<div>${data}</div>`
+    checkpointDisplay.innerHTML = timer.getCheckpointSegments().map(buildCheckpoint).join("")
+
     // use facelet to decide the state of the cube
     // if the facelet is solved, then the cube is solved
     if (facelet === "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB") {
       currentState = CubeState.LIVE
+      timer.saveCheckpoint()
       timer.stopTimer()
     }
 
     // check if the cross is done 
-    console.log(getCrossSolvedColor(facelet))
+    const solvedCrossColor = getCrossSolvedColor(facelet)
+    if (solvedCrossColor != null && cubeSolvingState.state === CubeSolvingState.SCRAMBLED) {
+      cubeSolvingState.state = CubeSolvingState.CROSS_SOLVED
+      cubeSolvingState.color = solvedCrossColor
+      timer.saveCheckpoint()
+    }
+
+    if (cubeSolvingState.state === CubeSolvingState.CROSS_SOLVED) {
+      cubeSolvingState.state = CubeSolvingState.F2L
+    }
+
+    if (cubeSolvingState.state === CubeSolvingState.F2L) {
+      const f2lsolved = getF2LPairsSolved(facelet, cubeSolvingState.color)
+      const ALL_F2L_SOLVED = 15; // 1111 in binary  
+      if (f2lsolved !== null) {
+        let prev = cubeSolvingState.misc.f2lSolved ?? 0
+        const res = +f2lsolved.DBL | (+f2lsolved.DFR) << 1 | (+f2lsolved.DLF) << 2 | (+f2lsolved.DRB) << 3;
+        const curr = res | prev;
+        cubeSolvingState.misc.f2lSolved = curr
+        console.log("F2L Solved: ", { f2lsolved, prev, curr })
+        if (cntBin1(prev) < cntBin1(curr) && curr !== ALL_F2L_SOLVED) {
+          console.log("[calling timer save]:", { prev, curr })
+          timer.saveCheckpoint()
+        }
+      }
+
+      if ((cubeSolvingState.misc.f2lSolved ?? 0) === ALL_F2L_SOLVED) {
+        cubeSolvingState.state = CubeSolvingState.OLL
+        timer.saveCheckpoint()
+      }
+    }
+
+    if (cubeSolvingState.state === CubeSolvingState.OLL) {
+      // check if the OLL is solved
+      const ollSolved = getOLLSolved(facelet, cubeSolvingState.color)
+      if (ollSolved) {
+        timer.saveCheckpoint()
+        cubeSolvingState.state = CubeSolvingState.PLL
+      }
+    }
   }
 
   if (currentState == CubeState.SCRAMBLING_COMPLETE) {
@@ -167,9 +234,15 @@ function onCubeMove(x) {
 
     if (scrambleIdx + i >= getScrambleMoves().length) {
       currentState = CubeState.SCRAMBLING_COMPLETE
+      cubeSolvingState.state = CubeSolvingState.SCRAMBLED
     }
 
   }
+}
+
+function cntBin1(n) {
+  const base = 2
+  return n.toString(base).replace(/0/g, '').length;
 }
 
 /**
