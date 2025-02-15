@@ -115,3 +115,7 @@ button:focus-visible {
 .gizmos-btn.active svg {
   stroke: #000;
 }
+
+span.done{
+  color: #00ff00;
+}
