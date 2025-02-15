@@ -281,10 +281,7 @@ export class RubiksCubeComponent {
         }
     }
 
-    /**
-     * Reset the cube's orientation.
-     */
-    resetCube() {
+    resetAxes() {
         this.cubeGroup.rotation.set(0, 0, 0);
         this.cubeGroup.quaternion.set(0, 0, 0, 1);
         if (this.gizmosEnabled) {
