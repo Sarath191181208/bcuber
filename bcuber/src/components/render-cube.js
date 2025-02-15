@@ -274,7 +274,6 @@ export class RubiksCubeComponent {
      */
     toggleGizmos(show) {
         this.gizmosEnabled = show;
-        this.transformControls.visible = show;
         if (!show) {
             this.transformControls.detach();
         } else {
