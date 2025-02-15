@@ -27,9 +27,9 @@ function rotateCubeToDFace(facelet, crossFace) {
         case 'B':
             return rotateX(facelet);
         case 'R':
-            return rotateZMinus(facelet);
-        case 'L':
             return rotateZPlus(facelet);
+        case 'L':
+            return rotateZMinus(facelet);
         default:
             throw new Error(`Unknown face: ${crossFace}`);
     }
