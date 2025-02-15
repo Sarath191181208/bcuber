@@ -7,24 +7,29 @@ export class QiYiCubeController {
     // cube player is an interface having addMoves method
     /**
      * @param {{ SERVICE_UUID: any; CHARACTERISTIC_UUID: any; MAC_ADDRESS: any; KEYS: any; }} config
-     * @param {{ addMoves: (arg0: string) => void; }} cubePlayer
+     * @param {(arg0: {inputs: {cubeTimeStamp: number, move: string}[], facelet: string}) => void } notifyMoves
      * @param {HTMLElement | undefined} renderIn
      */
-    constructor(config, cubePlayer, renderIn) {
+    constructor(config, notifyMoves, renderIn) {
         this.config = config;
         this.lastTs = 0;
         this.batteryLevel = 0;
         this.prevMoves = []; // Stores moves for playback
         this.currentIndex = 0;
         this.isPlaying = false;
-        this.cubePlayer = cubePlayer;
         this.renderContainer = renderIn;
+        this.notifyMoves = notifyMoves;
+
     }
 
     async connectCube() {
         try {
             const device = await this.requestBluetoothDevice();
             console.log("Device:", device);
+
+            if (!device || !device.gatt) {
+                throw new Error("Could not connect to QiYi Cube. Make sure the cube is nearby and advertising.");
+            }
 
             const server = await device.gatt.connect();
             const { cubeService, cubeCharacteristic } = await this.discoverCubeServiceAndCharacteristic(server);
@@ -175,7 +180,8 @@ export class QiYiCubeController {
             console.info('[qiyicube] Facelet:', newFacelet);
             drawFacelet(newFacelet, this.renderContainer);
 
-            this.cubePlayer.addMoves(moves.join(" "));
+            // this.cubePlayer.addMoves(moves.join(" "));
+            this.notifyMoves({ inputs: rawInputs, facelet: newFacelet });
 
             const newBatteryLevel = msg[35];
             if (newBatteryLevel !== this.batteryLevel) {
