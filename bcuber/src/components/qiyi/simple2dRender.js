@@ -50,11 +50,17 @@ export function drawFacelet(facelets, renderContainer) {
     // Optional: Position faces in an "open box" layout.
     const faces = renderContainer.querySelectorAll('.cube-face');
     if (faces.length >= 6) {
+        // @ts-ignore
         faces[0].style.position = 'absolute'; faces[0].style.top = '0px'; faces[0].style.left = '60px';    // U
+        // @ts-ignore
         faces[1].style.position = 'absolute'; faces[1].style.top = '60px'; faces[1].style.left = '120px';  // R
+        // @ts-ignore
         faces[2].style.position = 'absolute'; faces[2].style.top = '60px'; faces[2].style.left = '60px';   // F
+        // @ts-ignore
         faces[3].style.position = 'absolute'; faces[3].style.top = '120px'; faces[3].style.left = '60px';  // D
+        // @ts-ignore
         faces[4].style.position = 'absolute'; faces[4].style.top = '60px'; faces[4].style.left = '0px';    // L
+        // @ts-ignore
         faces[5].style.position = 'absolute'; faces[5].style.top = '60px'; faces[5].style.left = '180px';  // B
     }
 }
