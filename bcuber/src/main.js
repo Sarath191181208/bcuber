@@ -118,21 +118,21 @@ function onCubeMove(x) {
 
 
 
-  // if (currentState === CubeState.LIVE) {
-  //   return
-  // }
-
-  // if (currentState === CubeState.SOLVING) {
-  // use facelet to decide the state of the cube
-  // if the facelet is solved, then the cube is solved
-  if (facelet === "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB") {
-    currentState = CubeState.LIVE
-    timer.stopTimer()
+  if (currentState === CubeState.LIVE) {
+    return
   }
 
-  // check if the cross is done 
-  console.log(getCrossSolvedColor(facelet))
-  // }
+  if (currentState === CubeState.SOLVING) {
+    // use facelet to decide the state of the cube
+    // if the facelet is solved, then the cube is solved
+    if (facelet === "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB") {
+      currentState = CubeState.LIVE
+      timer.stopTimer()
+    }
+
+    // check if the cross is done 
+    console.log(getCrossSolvedColor(facelet))
+  }
 
   if (currentState == CubeState.SCRAMBLING_COMPLETE) {
     currentState = CubeState.SOLVING
