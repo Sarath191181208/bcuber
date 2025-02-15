@@ -297,9 +297,9 @@ function rotateX(facelet) {
         U: cube.F.slice(),       // no rotation
         R: rotateFace(cube.R, 90),
         F: cube.D.slice(),       // no rotation
-        D: cube.B.slice(),       // no rotation
+        D: rotateFace(cube.B, 180),       // no rotation
         L: rotateFace(cube.L, -90),
-        B: cube.U.slice()        // no rotation
+        B: rotateFace(cube.U.slice(), 180)
     };
     return joinCube(newFaces);
 }
