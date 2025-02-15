@@ -271,7 +271,7 @@ function rotateXPrime(facelet) {
         F: cube.U.slice(),       // no rotation
         D: cube.F.slice(),       // no rotation
         L: rotateFace(cube.L, 90),
-        B: cube.D.slice()        // no rotation
+        B: rotateFace(cube.D, 180) // no rotation
     };
     return joinCube(newFaces);
 }
