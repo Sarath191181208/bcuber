@@ -59,12 +59,13 @@ export class SolveDataTable {
         <thead>
           <tr>
             <th style="border: 1px solid #ccc; padding: 4px;">Cross</th>
-            <th style="border: 1px solid #ccc; padding: 4px;">F2L1</th>
-            <th style="border: 1px solid #ccc; padding: 4px;">F2L2</th>
-            <th style="border: 1px solid #ccc; padding: 4px;">F2L3</th>
-            <th style="border: 1px solid #ccc; padding: 4px;">F2L4</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">1</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">2</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">3</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">4</th>
             <th style="border: 1px solid #ccc; padding: 4px;">OLL</th>
             <th style="border: 1px solid #ccc; padding: 4px;">PLL</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -89,7 +90,8 @@ export class SolveDataTable {
           <td style="border: 1px solid #ccc; padding: 4px; font-size: 0.8em;">${f2l3.toFixed(2)}</td>
           <td style="border: 1px solid #ccc; padding: 4px; font-size: 0.8em;">${f2l4.toFixed(2)}</td>
           <td style="border: 1px solid #ccc; padding: 4px; font-size: 0.8em;">${oll.toFixed(2)}</td>
-            <td style="border: 1px solid #ccc; padding: 4px; font-size: 0.8em;">${pll.toFixed(2)}</td>
+          <td style="border: 1px solid #ccc; padding: 4px; font-size: 0.8em;">${pll.toFixed(2)}</td>
+          <td style="border: 1px solid #ccc; padding: 4px; font-size: 0.8em;">${((s.endTime - s.startTime) / 1000).toFixed(2)}</td>
         </tr>
       `;
         });
