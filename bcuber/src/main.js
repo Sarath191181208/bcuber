@@ -9,7 +9,7 @@ import { getCrossSolvedColor } from './components/faceletChecker.js'
 
 const qiyiConnectButton = selectElement('#qiyi-connect-btn')
 const cubeRenderDiv = selectElement('#cube')
-const debugCubeContainer = selectElement('#debug-cube-container')
+// const debugCubeContainer = selectElement('#debug-cube-container')
 const toggleGizmosButton = selectElement('#toggle-gizmos-btn')
 const scrambleButton = selectElement('#scramble-button')
 const scrambleDisplay = selectElement('#scramble-display')
@@ -39,7 +39,7 @@ let currentState = CubeState.LIVE
 
 // Create the cube and controller instances
 const cube = new RubiksCubeComponent(cubeRenderDiv)
-const qiyiHandler = new QiYiCubeController(QIYI_CONFIG, onCubeMove, debugCubeContainer)
+const qiyiHandler = new QiYiCubeController(QIYI_CONFIG, onCubeMove, undefined)
 
 /**
  * Normalize a move string.
