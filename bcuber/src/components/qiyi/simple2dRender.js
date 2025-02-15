@@ -5,7 +5,7 @@
  */
 export function drawFacelet(facelets, renderContainer) {
 
-    if (renderContainer === undefined) { 
+    if (renderContainer === undefined) {
         console.warn("No render container provided.");
         return;
     }
@@ -21,8 +21,7 @@ export function drawFacelet(facelets, renderContainer) {
         'B': 'blue'
     };
 
-    const cubeContainer = document.getElementById(containerId);
-    cubeContainer.innerHTML = ''; // Clear previous faces
+    renderContainer.innerHTML = ''; // Clear previous faces
 
     const faceNames = ['U', 'R', 'F', 'D', 'L', 'B'];
     faceNames.forEach(faceName => {
@@ -45,11 +44,11 @@ export function drawFacelet(facelets, renderContainer) {
             sticker.style.border = '1px solid black';
             face.appendChild(sticker);
         }
-        cubeContainer.appendChild(face);
+        renderContainer.appendChild(face);
     });
 
     // Optional: Position faces in an "open box" layout.
-    const faces = cubeContainer.querySelectorAll('.cube-face');
+    const faces = renderContainer.querySelectorAll('.cube-face');
     if (faces.length >= 6) {
         faces[0].style.position = 'absolute'; faces[0].style.top = '0px'; faces[0].style.left = '60px';    // U
         faces[1].style.position = 'absolute'; faces[1].style.top = '60px'; faces[1].style.left = '120px';  // R
