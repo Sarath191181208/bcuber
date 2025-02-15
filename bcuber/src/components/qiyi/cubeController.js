@@ -40,8 +40,10 @@ export class QiYiCubeController {
 
             // Send initial hello message (including MAC address)
             await this.sendHello(cubeCharacteristic, this.config.MAC_ADDRESS);
+            return true;
         } catch (error) {
             console.error("Error connecting to QiYi Cube:", error);
+            return false;
         }
     }
 
