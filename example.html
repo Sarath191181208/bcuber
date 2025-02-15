@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Rubik's Cube with Orientation Controls & Reset</title>
+    <title>Rubik's Cube with Smooth Snapping Orientation</title>
     <style>
       body {
         margin: 0;
@@ -214,50 +214,62 @@
         rotatedAngle = 0;
       }
 
-      document
-        .getElementById("submitMoves")
-        .addEventListener("click", () => {
-          const input = document.getElementById("moveInput").value;
-          const tokens = input.trim().split(/\s+/);
-          for (const token of tokens) {
-            if (moveMapping[token]) {
-              moveQueue.push(moveMapping[token]);
-            }
+      document.getElementById("submitMoves").addEventListener("click", () => {
+        const input = document.getElementById("moveInput").value;
+        const tokens = input.trim().split(/\s+/);
+        for (const token of tokens) {
+          if (moveMapping[token]) {
+            moveQueue.push(moveMapping[token]);
           }
-          document.getElementById("moveInput").value = "";
-        });
+        }
+        document.getElementById("moveInput").value = "";
+      });
 
-      // ----------------------- ORIENTATION HANDLES -----------------------
+      // ----------------------- ORIENTATION HANDLES WITH SMOOTH SNAPPING -----------------------
       // Use TransformControls in rotate mode so the user can interactively reorient the cube.
       const transformControls = new TransformControls(camera, renderer.domElement);
       transformControls.attach(cubeGroup);
       transformControls.setMode("rotate");
       scene.add(transformControls);
 
-      // Disable trackball controls when interacting with the rotation gizmo.
+      // Smooth snapping variables.
+      let snappingActive = false;
+      let targetQuaternion = new THREE.Quaternion();
+
       transformControls.addEventListener("mouseDown", () => {
+        snappingActive = false; // Cancel any snapping when the user starts interacting.
         controls.enabled = false;
       });
+
       transformControls.addEventListener("mouseUp", () => {
+        // Calculate the nearest snapped rotation.
+        const currentEuler = new THREE.Euler().setFromQuaternion(cubeGroup.quaternion, "XYZ");
+        const snapIncrement = THREE.MathUtils.degToRad(15); // Change snap increment here.
+        const snappedEuler = new THREE.Euler(
+          Math.round(currentEuler.x / snapIncrement) * snapIncrement,
+          Math.round(currentEuler.y / snapIncrement) * snapIncrement,
+          Math.round(currentEuler.z / snapIncrement) * snapIncrement,
+          "XYZ"
+        );
+        targetQuaternion.setFromEuler(snappedEuler);
+        snappingActive = true;
         controls.enabled = true;
       });
 
       // ----------------------- RESET ORIENTATION -----------------------
-      // Clicking the reset button returns the cubeGroup to its default orientation.
-      document
-        .getElementById("resetOrientation")
-        .addEventListener("click", () => {
-          cubeGroup.rotation.set(0, 0, 0);
-          cubeGroup.quaternion.set(0, 0, 0, 1);
-          // Reattach to update the TransformControls gizmo.
-          transformControls.attach(cubeGroup);
-        });
+      document.getElementById("resetOrientation").addEventListener("click", () => {
+        cubeGroup.rotation.set(0, 0, 0);
+        cubeGroup.quaternion.set(0, 0, 0, 1);
+        // Reattach to update the TransformControls gizmo.
+        transformControls.attach(cubeGroup);
+      });
 
       // ----------------------- ANIMATION LOOP -----------------------
       function animate() {
         requestAnimationFrame(animate);
         controls.update();
 
+        // Process queued face moves.
         if (!rotatingFlag && moveQueue.length > 0) {
           const nextMove = moveQueue.shift();
           startMove(nextMove);
@@ -291,6 +303,15 @@
             cubeGroup.remove(currentGroup);
             currentGroup = null;
             rotatingFlag = false;
+          }
+        }
+
+        // Smooth snapping interpolation.
+        if (snappingActive) {
+          cubeGroup.quaternion.slerp(targetQuaternion, 0.1); // Adjust 0.1 for speed.
+          if (cubeGroup.quaternion.angleTo(targetQuaternion) < 0.01) {
+            cubeGroup.quaternion.copy(targetQuaternion);
+            snappingActive = false;
           }
         }
 
