@@ -22,7 +22,7 @@ import { rotateCubeToDFace } from "./utils";
  *   - Edge:   { F: 21, L: 41 }
  *
  * @param {string} facelet - A 54–character string representing the cube’s facelets.
- * @returns {{ DFR: boolean, DRB: boolean, DBL: boolean, DLF: boolean } | null} An object with F2L slot keys (DFR, DRB, DBL, DLF) and boolean values,
+ * @returns {import("../../types").F2LIsSlotSolved | null} An object with F2L slot keys (DFR, DRB, DBL, DLF) and boolean values,
  *                        or null if no cross is solved or if rotation fails.
  */
 export function getF2LPairsSolved(facelet, crossFace) {

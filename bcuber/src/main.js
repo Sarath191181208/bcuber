@@ -8,6 +8,9 @@ import { CubeTimer } from './components/cubeTimer.js'
 import { getF2LPairsSolved } from './components/stageFinder/faceleteF2lChecker.js'
 import { getCrossSolvedColor } from './components/stageFinder/faceletCrossChecker.js'
 import { getOLLSolved } from './components/stageFinder/faceletOllChecker.js'
+import { ScrambleHandler } from './utils/scrambleHandler.js'
+import { selectElement } from './utils/domUtils.js'
+import { CubeSolvingStateEnum, CubeState } from './types.js'
 
 const qiyiConnectButton = selectElement('#qiyi-connect-btn')
 const cubeRenderDiv = selectElement('#cube')
@@ -16,48 +19,26 @@ const scrambleButton = selectElement('#scramble-button')
 const scrambleDisplay = selectElement('#scramble-display')
 const timerDisplay = selectElement('#timer-display')
 const checkpointDisplay = selectElement('#checkpoint-view')
-
 const debugCubeContainer = document.querySelector('#debug-cube-container')
 
-// We'll store the scramble as an Alg, but also work with an array of moves.
-let scramble = new Alg()
-let scrambleIdx = 0
 
 const timer = new CubeTimer(timerDisplay)
-
-/**
- * @enum {string}
- */
-const CubeState = {
-  SCRAMBLING: "SCRAMBLING",
-  SCRAMBLING_COMPLETE: "SCRAMBLING_COMPLETE",
-  INSPECTING: "INSPECTING",
-  SOLVING: "SOLVING",
-  LIVE: "LIVE"
-}
-
-/**
- * @enum {string}
- */
-const CubeSolvingState = {
-  SCRAMBLED: "SCRAMBLED",
-  CROSS_SOLVED: "CROSS",
-  F2L: "F2L",
-  OLL: "OLL",
-  PLL: "PLL"
-}
+const scrambleHandler = new ScrambleHandler(scrambleDisplay);
 
 /**
  * @type {CubeState}
  */
 let currentState = CubeState.LIVE
+
 /**
- * @type {{color: string | null, state: CubeSolvingState | null, misc: Record<string, any>}}
+ * @type {import('./types.js').CubeSolvingState}
  */
 let cubeSolvingState = {
   color: null,
   state: null,
-  misc: {},
+  misc: {
+    f2lSolved: null
+  },
 }
 
 // Create the cube and controller instances
@@ -65,61 +46,6 @@ const cube = new RubiksCubeComponent(cubeRenderDiv)
 // @ts-ignore
 const qiyiHandler = new QiYiCubeController(QIYI_CONFIG, onCubeMove, debugCubeContainer)
 
-/**
- * Normalize a move string.
- * @param {string} move
- * @returns {string} normalized move
- */
-function normalizeMove(move) {
-  move = move.trim()
-  if (move.endsWith("2")) {
-    const singleMove = move.slice(0, -1)
-    return `${singleMove} ${singleMove}`
-  }
-  return move
-}
-
-/**
- * Get the inverse of a move.
- * For example: U -> U', U' -> U, U2 -> U2.
- * @param {string} move
- * @returns {string} inverse move.
- */
-function getInverse(move) {
-  if (move.endsWith("2")) {
-    return move // 180° turns are self-inverse
-  }
-  if (move.endsWith("'")) {
-    return move.slice(0, -1)
-  }
-  return move + "'"
-}
-
-/**
- * Extract an array of moves from the scramble.
- * If scramble.childAlgNodes is an array, use it;
- * otherwise, split the scramble string.
- * @returns {string[]} array of moves.
- */
-function getScrambleMoves() {
-  // Fallback: assume scramble.toString() returns moves separated by whitespace.
-  return scramble.toString().toUpperCase().trim().split(/\s+/)
-}
-
-/**
- * Update the scramble display.
- * Moves that have been correctly executed are "greyed out" (by applying a CSS class).
- */
-function updateScrambleDisplay() {
-  const moves = getScrambleMoves()
-  scrambleDisplay.innerHTML = moves
-    .map((move, index) => {
-      return index < scrambleIdx
-        ? `<span class="done">${move}</span>`
-        : `<span>${move}</span>`
-    })
-    .join(" ")
-}
 
 /**
  * Processes moves coming in from the cube.
@@ -134,12 +60,11 @@ function onCubeMove(x) {
   // Combine moves from the event (sorted by timestamp)
   const inputMoveStr = inputs
     .sort((a, b) => a.cubeTimeStamp - b.cubeTimeStamp)
-    .map(m => m.move.trim())
+    .map(m => m.move.trim().toUpperCase())
     .join(" ")
 
   // animate the cube 
   cube.addMoves(inputMoveStr)
-
 
   if (currentState === CubeState.LIVE) {
     return
@@ -154,49 +79,42 @@ function onCubeMove(x) {
     // if the facelet is solved, then the cube is solved
     if (facelet === "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB") {
       currentState = CubeState.LIVE
+      cubeSolvingState.state = CubeState.SOLVED
+      cubeSolvingState.color = null
+      cubeSolvingState.misc = { f2lSolved: null }
       timer.saveCheckpoint()
       timer.stopTimer()
     }
 
     // check if the cross is done 
     const solvedCrossColor = getCrossSolvedColor(facelet)
-    if (solvedCrossColor != null && cubeSolvingState.state === CubeSolvingState.SCRAMBLED) {
-      cubeSolvingState.state = CubeSolvingState.CROSS_SOLVED
+    if (solvedCrossColor != null && cubeSolvingState.state === CubeSolvingStateEnum.SCRAMBLED) {
+      cubeSolvingState.state = CubeSolvingStateEnum.CROSS_SOLVED
       cubeSolvingState.color = solvedCrossColor
       timer.saveCheckpoint()
     }
 
-    if (cubeSolvingState.state === CubeSolvingState.CROSS_SOLVED) {
-      cubeSolvingState.state = CubeSolvingState.F2L
+    if (cubeSolvingState.state === CubeSolvingStateEnum.CROSS_SOLVED) {
+      cubeSolvingState.state = CubeSolvingStateEnum.F2L
     }
 
-    if (cubeSolvingState.state === CubeSolvingState.F2L) {
+    if (cubeSolvingState.state === CubeSolvingStateEnum.F2L) {
       const f2lsolved = getF2LPairsSolved(facelet, cubeSolvingState.color)
-      const ALL_F2L_SOLVED = 15; // 1111 in binary  
-      if (f2lsolved !== null) {
-        let prev = cubeSolvingState.misc.f2lSolved ?? 0
-        const res = +f2lsolved.DBL | (+f2lsolved.DFR) << 1 | (+f2lsolved.DLF) << 2 | (+f2lsolved.DRB) << 3;
-        const curr = res | prev;
-        cubeSolvingState.misc.f2lSolved = curr
-        console.log("F2L Solved: ", { f2lsolved, prev, curr })
-        if (cntBin1(prev) < cntBin1(curr) && curr !== ALL_F2L_SOLVED) {
-          console.log("[calling timer save]:", { prev, curr })
-          timer.saveCheckpoint()
-        }
-      }
-
-      if ((cubeSolvingState.misc.f2lSolved ?? 0) === ALL_F2L_SOLVED) {
-        cubeSolvingState.state = CubeSolvingState.OLL
+      const newPairEvent = getF2LPairEvent(f2lsolved)
+      if (newPairEvent) {
         timer.saveCheckpoint()
       }
+      if (newPairEvent == 4) {
+        cubeSolvingState.state = CubeSolvingStateEnum.OLL
+      }
     }
 
-    if (cubeSolvingState.state === CubeSolvingState.OLL) {
+    if (cubeSolvingState.state === CubeSolvingStateEnum.OLL) {
       // check if the OLL is solved
       const ollSolved = getOLLSolved(facelet, cubeSolvingState.color)
       if (ollSolved) {
         timer.saveCheckpoint()
-        cubeSolvingState.state = CubeSolvingState.PLL
+        cubeSolvingState.state = CubeSolvingStateEnum.PLL
       }
     }
   }
@@ -204,40 +122,32 @@ function onCubeMove(x) {
   if (currentState == CubeState.SCRAMBLING_COMPLETE) {
     currentState = CubeState.SOLVING
     timer.startTimer()
-    scramble = new Alg()
-    scrambleIdx = 0
-    updateScrambleDisplay()
+    scrambleHandler.reset()
   }
 
   if (currentState === CubeState.SCRAMBLING) {
-    const moves = inputMoveStr.toUpperCase().toUpperCase().trim().split(/\s+/)
-    console.log("SCRAMBLING: ", { moves })
-    let i = 0
-    for (; i < moves.length; i++) {
-      const actualMove = moves[i]
-      const correctionMove = checkMoveWithScramble(actualMove, scrambleIdx + i)
-      if (correctionMove) {
-        console.log("Incorrect move, correcting with: ", correctionMove)
-        break
-      }
+    const moves = inputMoveStr.toUpperCase().trim().split(/\s+/);
+    scrambleHandler.processMoves(moves);
+    if (scrambleHandler.isScrambleComplete()) {
+      currentState = CubeState.SCRAMBLING_COMPLETE;
+      cubeSolvingState.state = CubeSolvingStateEnum.SCRAMBLED;
     }
-    const reverseMoves = getReverseMoves(moves, i)
-    if (reverseMoves != "") {
-      // add the reversing moves into the scramble in scrambleIdx + i
-      const prevScramble = scramble.toString().split(" ").slice(scrambleIdx + i).join(" ")
-      console.log("[On Cube Move]: ", { prevScramble })
-      const newScramble = new Alg(simplify(`${reverseMoves} ${prevScramble}`)).experimentalSimplify()
-      scramble = newScramble
-      scrambleIdx = 0
-      updateScrambleDisplay()
-    }
-
-    if (scrambleIdx + i >= getScrambleMoves().length) {
-      currentState = CubeState.SCRAMBLING_COMPLETE
-      cubeSolvingState.state = CubeSolvingState.SCRAMBLED
-    }
-
   }
+}
+
+/**
+ * @param {import('./types.js').F2LIsSlotSolved | null} f2lSolved
+ * @returns {number | undefined}
+ */
+function getF2LPairEvent(f2lSolved) {
+  if (f2lSolved == null) return;
+  let prev = cubeSolvingState.misc.f2lSolved ?? 0
+  const res = +f2lSolved.DBL | (+f2lSolved.DFR) << 1 | (+f2lSolved.DLF) << 2 | (+f2lSolved.DRB) << 3;
+  const curr = res | prev;
+  cubeSolvingState.misc.f2lSolved = curr
+  console.log("F2L Solved: ", { f2lSolved, prev, curr })
+  if (cntBin1(prev) == cntBin1(curr)) return;
+  return cntBin1(curr)
 }
 
 function cntBin1(n) {
@@ -245,78 +155,10 @@ function cntBin1(n) {
   return n.toString(base).replace(/0/g, '').length;
 }
 
-/**
- * @param {string} scramble
- */
-function simplify(scramble) {
-  // find repetation of three moves and switch them with their inverses 
-  const moves = scramble.trim().toUpperCase().toString().split(/\s+/)
-  const newMovesStack = [moves[0]]
-  for (let i = 1; i < moves.length; i++) {
-    const currentMove = moves[i]
-    newMovesStack.push(currentMove)
-
-    if (newMovesStack.length >= 2) {
-      const lastMove = newMovesStack[newMovesStack.length - 2]
-      if (lastMove === getInverse(currentMove)) {
-        newMovesStack.pop()
-        newMovesStack.pop()
-      }
-    }
-
-    // check if the stack has two moves already added 
-    if (newMovesStack.length >= 3) {
-      const firstMove = newMovesStack[newMovesStack.length - 3]
-      const secondMove = newMovesStack[newMovesStack.length - 2]
-      const thirdMove = newMovesStack[newMovesStack.length - 1]
-      if (firstMove == secondMove && secondMove == thirdMove) {
-        newMovesStack.pop()
-        newMovesStack.pop()
-        newMovesStack.pop()
-        newMovesStack.push(getInverse(secondMove))
-      }
-    }
-  }
-
-  return newMovesStack.join(" ")
-}
-
-/**
- * @param {string[]} moves
- * @param {number} fromIdx
- */
-function getReverseMoves(moves, fromIdx) {
-  if (fromIdx >= moves.length) return ""
-  const movesToReverse = moves.slice(fromIdx)
-  const reversedMoves = movesToReverse.map(move => getInverse(move))
-  return reversedMoves.join(" ")
-}
-
-/**
- * @param {string} singleMove // This is just a single move i.e R, U, U' etc and U2, R2 etc doesn't exists
- // This is just a single move i.e R, U, U' etc and U2, R2 etc doesn't exists
- * @param {number} idx
-  * @returns {string | null} inverse move if the move was incorrect, null otherwise
- */
-function checkMoveWithScramble(singleMove, idx) {
-  const move = singleMove.trim().toUpperCase()
-  const scrambleMove = getScrambleMoves()[idx]
-
-  if (move === scrambleMove) {
-    scrambleIdx++
-  } else {
-    const inverseMove = getInverse(singleMove)
-    return inverseMove;
-  }
-
-  updateScrambleDisplay()
-  return null
-}
 
 // Start with gizmos active
-let gizmosActive = true
+let gizmosActive = false
 cube.toggleGizmos(gizmosActive)
-toggleGizmosButton.classList.add('active')
 
 // Connect QIYI Cube when the connect button is clicked
 qiyiConnectButton.addEventListener('click', async () => {
@@ -335,26 +177,6 @@ scrambleButton.addEventListener('click', async () => {
   if (currentState !== CubeState.SCRAMBLING) {
     currentState = CubeState.SCRAMBLING
     const randScramble = await randomScrambleForEvent("333")
-    // convert all the moves to uppercase and things like r2 l2 f2 etc to r r l l etc 
-    scramble = new Alg(randScramble.toString().split(" ").map(move => normalizeMove(move)).join(" "))
-    console.log("Scramble moves: ", getScrambleMoves())
-    scrambleIdx = 0
-    updateScrambleDisplay()
+    scrambleHandler.setScramble(randScramble)
   }
 })
-
-/**
- * Helper function to select an element by its ID.
- * @param {string} id
- * @returns {HTMLElement}
- */
-function selectElement(id) {
-  const res = document.querySelector(id)
-  if (!res) {
-    console.warn(`No element found with id: ${id}`)
-    throw new Error(`No element found with id: ${id}`)
-  }
-  // @ts-ignore
-  return res
-}
-
