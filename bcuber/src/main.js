@@ -17,14 +17,30 @@ if (!cubeRenderDiv) {
   throw new Error('No render div found.')
 }
 
-// @ts-ignore HTMLElement vs Element
-const cube = new RubiksCubeComponent(cubeRenderDiv)
+if (!toggleGizmosButton) {
+  console.warn('No toggle gizmos button found.')
+  throw new Error('No toggle gizmos button found.')
+}
 
-// @ts-ignore HTMLElement vs Element
+// Create the cube and controller instances
+// @ts-ignore
+const cube = new RubiksCubeComponent(cubeRenderDiv)
+// @ts-ignore
 const qiyiHandler = new QiYiCubeController(QIYI_CONFIG, cube, cubeRenderDiv)
 
-cube.toggleGizmos(true)
+// Start with gizmos active
+let gizmosActive = true
+cube.toggleGizmos(gizmosActive)
+toggleGizmosButton.classList.add('active')
 
+// Connect QIYI Cube when the connect button is clicked
 qiyiConnectButton.addEventListener('click', async () => {
   await qiyiHandler.connectCube()
+})
+
+// Toggle gizmos on/off and update the button's active class accordingly
+toggleGizmosButton.addEventListener('click', () => {
+  gizmosActive = !gizmosActive
+  cube.toggleGizmos(gizmosActive)
+  toggleGizmosButton.classList.toggle('active', gizmosActive)
 })

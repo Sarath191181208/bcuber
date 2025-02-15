@@ -93,9 +93,25 @@ button:focus-visible {
   }
 }
 
-#cube{
+#cube {
   width: 100%;
   max-width: 500px;
   max-height: 600px;
   height: 80vh;
+}
+
+.gizmos-btn {
+  background-color: transparent;
+  border: 1px solid #1a1a1a;
+  background-color: #3a3a3a;
+  transition: fill 0.3s;
+}
+
+/* Active state styles */
+.gizmos-btn.active {
+  background-color: #ddd;
+}
+
+.gizmos-btn.active svg {
+  stroke: #000;
 }
