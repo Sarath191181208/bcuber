@@ -238,10 +238,10 @@ function joinCube(faces) {
 function rotateX2(facelet) {
     const cube = splitCube(facelet);
     const newFaces = {
-        U: rotateFace(cube.D, 180),
+        U: cube.D.slice(),
         R: rotateFace(cube.R, 180),
         F: rotateFace(cube.B, 180),
-        D: rotateFace(cube.U, 180),
+        D: cube.U.slice(),
         L: rotateFace(cube.L, 180),
         B: rotateFace(cube.F, 180)
     };
