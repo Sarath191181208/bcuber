@@ -183,6 +183,7 @@ qiyiConnectButton.addEventListener('click', async () => {
   const connected = await qiyiHandler.connectCube()
   if (connected) {
     qiyiConnectButton.innerHTML = /*html */ `<icon>${BluetoothConnectedIcon}</icon>`
+    await scrambleCube()
   } else {
     qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
     qiyiConnectButton.style.border = "1px solid red"
@@ -198,10 +199,14 @@ toggleGizmosButton.addEventListener('click', () => {
 
 // Scramble the cube when the scramble button is clicked
 scrambleButton.addEventListener('click', async () => {
+  await scrambleCube()
+})
+
+async function scrambleCube() {
   if (currentState !== CubeState.SCRAMBLING) {
     currentState = CubeState.SCRAMBLING
     const randScramble = await randomScrambleForEvent("333")
     solve = new SolveData(randScramble.toString())
     scrambleHandler.setScramble(randScramble)
   }
-})
+}
