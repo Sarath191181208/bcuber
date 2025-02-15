@@ -8,7 +8,7 @@ export class QiYiCubeController {
     /**
      * @param {{ SERVICE_UUID: any; CHARACTERISTIC_UUID: any; MAC_ADDRESS: any; KEYS: any; }} config
      * @param {(arg0: {inputs: {cubeTimeStamp: number, move: string}[], facelet: string}) => void } notifyMoves
-     * @param {HTMLElement | undefined} renderIn
+     * @param {HTMLElement |  null} renderIn
      */
     constructor(config, notifyMoves, renderIn) {
         this.config = config;
@@ -150,6 +150,7 @@ export class QiYiCubeController {
             this.sendMessage(characteristic, msg.slice(2, 7));
             const newFacelet = CubeParser.parseFacelet(msg.slice(7, 34));
 
+            if (this.renderContainer)
             drawFacelet(newFacelet, this.renderContainer);
 
             console.info('[battery] Battery level:', this.batteryLevel);
@@ -178,7 +179,8 @@ export class QiYiCubeController {
 
             const newFacelet = CubeParser.parseFacelet(msg.slice(7, 34));
             console.info('[qiyicube] Facelet:', newFacelet);
-            drawFacelet(newFacelet, this.renderContainer);
+            if (this.renderContainer)
+                drawFacelet(newFacelet, this.renderContainer);
 
             // this.cubePlayer.addMoves(moves.join(" "));
             this.notifyMoves({ inputs: rawInputs, facelet: newFacelet });
