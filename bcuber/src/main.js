@@ -11,7 +11,7 @@ import { getOLLSolved } from './components/stageFinder/faceletOllChecker.js'
 import { ScrambleHandler } from './utils/scrambleHandler.js'
 import { selectElement } from './utils/domUtils.js'
 import { CubeSolvingStateEnum, CubeState } from './types.js'
-import { BluetoothConnectedIcon } from './utils/icons.js'
+import { BluetoothConnectedIcon, BluetoothConnectingIcon } from './utils/icons.js'
 
 const qiyiConnectButton = selectElement('#qiyi-connect-btn')
 const cubeRenderDiv = selectElement('#cube')
@@ -163,9 +163,13 @@ cube.toggleGizmos(gizmosActive)
 
 // Connect QIYI Cube when the connect button is clicked
 qiyiConnectButton.addEventListener('click', async () => {
+  qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
   const connected = await qiyiHandler.connectCube()
   if (connected) {
-    qiyiConnectButton.innerHTML = /*html */ `<span>${BluetoothConnectedIcon}</span>`
+    qiyiConnectButton.innerHTML = /*html */ `<icon>${BluetoothConnectedIcon}</icon>`
+  } else {
+    qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
+    qiyiConnectButton.style.border = "1px solid red"
   }
 })
 

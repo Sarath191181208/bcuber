@@ -24,48 +24,49 @@
     .relative {
       position: relative;
     }
+
+    icon {
+      font-size: 1.8em;
+    }
   </style>
 </head>
 
 <body>
   <button id="qiyi-connect-btn">
-    <span id="bluetooth-icon">
+    <icon>
       <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em"
-        xmlns="http://www.w3.org/2000/svg" data-darkreader-inline-fill="" data-darkreader-inline-stroke=""
-        style="--darkreader-inline-fill: currentColor; --darkreader-inline-stroke: currentColor;">
-        <path fill="none" d="M0 0h24v24H0z"></path>
+        xmlns="http://www.w3.org/2000/svg" data-darkreader-inline-fill="" data-darkreader-inline-stroke="">
+
+        <path fill="none" d="M0 0h24v24H0V0z"></path>
         <path
           d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z">
         </path>
       </svg>
-    </span>
+    </icon>
   </button>
 
   <!-- Updated toggle button with an <img> tag loading the gizmo.svg from the public folder -->
   <button id="toggle-gizmos-btn" class="gizmos-btn">
-    <span>
+    <icon>
       <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
-        stroke-linejoin="round" width="1em" height="1em" xmlns="http://www.w3.org/2000/svg"
-        data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;">
+        stroke-linejoin="round" width="1em" height="1em" xmlns="http://www.w3.org/2000/svg">
         <path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2">
         </path>
         <path d="m15.194 13.707 3.814 1.86-1.86 3.814"></path>
         <path d="M19 15.57c-1.804.885-4.274 1.43-7 1.43-5.523 0-10-2.239-10-5s4.477-5 10-5c4.838 0 8.873 1.718 9.8 4">
         </path>
       </svg>
-    </span>
+    </icon>
   </button>
   <button id="scramble-button">
-    <span>
+    <icon>
       <svg stroke="currentColor" fill="currentColor" stroke-width="0" version="1.2" baseProfile="tiny"
-        viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" data-darkreader-inline-fill=""
-        data-darkreader-inline-stroke=""
-        style="--darkreader-inline-fill: currentColor; --darkreader-inline-stroke: currentColor;">
+        viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M4 9h3.5c.736 0 1.393.391 1.851 1.001.325-.604.729-1.163 1.191-1.662-.803-.823-1.866-1.339-3.042-1.339h-3.5c-.553 0-1 .448-1 1s.447 1 1 1zM11.685 12.111c.551-1.657 2.256-3.111 3.649-3.111h1.838l-1.293 1.293c-.391.391-.391 1.023 0 1.414.195.195.451.293.707.293s.512-.098.707-.293l3.707-3.707-3.707-3.707c-.391-.391-1.023-.391-1.414 0s-.391 1.023 0 1.414l1.293 1.293h-1.838c-2.274 0-4.711 1.967-5.547 4.479l-.472 1.411c-.641 1.926-2.072 3.11-2.815 3.11h-2.5c-.553 0-1 .448-1 1s.447 1 1 1h2.5c1.837 0 3.863-1.925 4.713-4.479l.472-1.41zM15.879 13.293c-.391.391-.391 1.023 0 1.414l1.293 1.293h-2.338c-1.268 0-2.33-.891-2.691-2.108-.256.75-.627 1.499-1.09 2.185.886 1.162 2.243 1.923 3.781 1.923h2.338l-1.293 1.293c-.391.391-.391 1.023 0 1.414.195.195.451.293.707.293s.512-.098.707-.293l3.707-3.707-3.707-3.707c-.391-.391-1.023-.391-1.414 0z">
         </path>
       </svg>
-    </span>
+    </icon>
   </button>
 
   <div id="app">
