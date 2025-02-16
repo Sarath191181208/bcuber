@@ -15,12 +15,17 @@ const countMovesBetween = (moves, startSec, endSec) => {
 
 /**
  * RecentSolveView component displays detailed info for one solve.
- * It shows overall metrics (Time, Moves, TPS, Fluency) and a breakdown for each stage:
- * Cross, F2L (with subcategories F1, F2, F3, F4), OLL, and PLL.
+ * It shows overall metrics (Time, Moves, TPS) and a breakdown for each stage:
+ * Cross, F2L (with individual sub-stages F1, F2, F3, F4 and an overall F2L stats box below),
+ * OLL, and PLL.
  *
  * Assumptions:
- * - s.checkpoints is an array of 8 numbers in seconds:
- *   [0, cross, F1, F2, F3, F4, OLL, PLL]
+ * - s.checkpoints is an array of 7 numbers in seconds:
+ *   [Cross, F1, F2, F3, F4, OLL, PLL]
+ *   where:
+ *     • Cross: from 0 to cps[0]
+ *     • F2L: from cps[0] to cps[4] 
+ *         (F1 = cps[1]-cps[0], F2 = cps[2]-cps[1], F3 = cps[3]-cps[2], F4 = cps[4]-cps[3])
  * - s.startTime and s.endTime are in milliseconds.
  * - s.moves is an array of move objects with timestamps in milliseconds.
  * - s.convertTimestampsToRelative() returns moves with timestamps relative to s.startTime.
@@ -42,54 +47,60 @@ export class RecentSolveView {
 
     render() {
         const s = this.solveData;
-        // Validate that required data exists.
+        // Validate required data.
         if (!s.startTime || !s.endTime || !s.checkpoints || s.checkpoints.length < 7) {
             this.container.innerHTML = `<p style="color: #ccc;">No valid solve data available.</p>`;
             return;
         }
 
-        // Overall metrics
+        // Overall metrics.
         const totalTimeSec = (s.endTime - s.startTime) / 1000;
         const totalMoves = s.moves.length;
         const overallTPS = totalTimeSec > 0 ? totalMoves / totalTimeSec : 0;
 
-        // Calculate F2L TPS for fluency rating (F2L spans from checkpoints[1] to checkpoints[5])
         const cps = s.checkpoints;
-        const totalF2LTime = cps[5] - cps[1];
         const relativeMoves = s.convertTimestampsToRelative();
         if (!relativeMoves) {
             this.container.innerHTML = `<p style="color: #ccc;">No valid solve data available.</p>`;
             return;
         }
-        const f2lMoves = countMovesBetween(relativeMoves, cps[1], cps[5]);
-        const f2lTPS = totalF2LTime > 0 ? f2lMoves / totalF2LTime : 0;
 
-        let fluencyRating = '';
-        if (f2lTPS >= 4) {
-            fluencyRating = 'Excellent';
-        } else if (f2lTPS >= 3) {
-            fluencyRating = 'Good';
-        } else {
-            fluencyRating = 'Needs Work';
-        }
+        // Cross: from 0 to cps[0]
+        const crossTime = cps[0];
+        const crossMoves = countMovesBetween(relativeMoves, 0, cps[0]);
+        const crossTPS = crossTime > 0 ? crossMoves / crossTime : 0;
 
-        const stages = [
-            { label: 'Cross', start: cps[0], end: cps[1] },
-            { label: 'F1', start: cps[1], end: cps[2] },
-            { label: 'F2', start: cps[2], end: cps[3] },
-            { label: 'F3', start: cps[3], end: cps[4] },
-            { label: 'F4', start: cps[4], end: cps[5] },
-            { label: 'OLL', start: cps[5], end: cps[6] },
-            { label: 'PLL', start: cps[6], end: cps[7] }
-        ];
+        // F2L sub-stages:
+        const f1Time = cps[1] - cps[0];
+        const f1Moves = countMovesBetween(relativeMoves, cps[0], cps[1]);
+        const f1TPS = f1Time > 0 ? f1Moves / f1Time : 0;
 
-        let stagesHtml = '';
-        for (const stage of stages) {
-            const stageTime = stage.end - stage.start; // in seconds
-            const stageMoves = countMovesBetween(relativeMoves, stage.start, stage.end);
-            const stageTPS = stageTime > 0 ? stageMoves / stageTime : 0;
-            stagesHtml += this._renderStageBox(stage.label, stageTime, stageMoves, stageTPS);
-        }
+        const f2Time = cps[2] - cps[1];
+        const f2Moves = countMovesBetween(relativeMoves, cps[1], cps[2]);
+        const f2TPS = f2Time > 0 ? f2Moves / f2Time : 0;
+
+        const f3Time = cps[3] - cps[2];
+        const f3Moves = countMovesBetween(relativeMoves, cps[2], cps[3]);
+        const f3TPS = f3Time > 0 ? f3Moves / f3Time : 0;
+
+        const f4Time = cps[4] - cps[3];
+        const f4Moves = countMovesBetween(relativeMoves, cps[3], cps[4]);
+        const f4TPS = f4Time > 0 ? f4Moves / f4Time : 0;
+
+        // Overall F2L stats: from cps[0] to cps[4]
+        const overallF2LTime = cps[4] - cps[0];
+        const overallF2LMoves = countMovesBetween(relativeMoves, cps[0], cps[4]);
+        const overallF2LTPS = overallF2LTime > 0 ? overallF2LMoves / overallF2LTime : 0;
+
+        // OLL: from cps[4] to cps[5]
+        const ollTime = cps[5] - cps[4];
+        const ollMoves = countMovesBetween(relativeMoves, cps[4], cps[5]);
+        const ollTPS = ollTime > 0 ? ollMoves / ollTime : 0;
+
+        // PLL: from cps[5] to cps[6]
+        const pllTime = cps[6] - cps[5];
+        const pllMoves = countMovesBetween(relativeMoves, cps[5], cps[6]);
+        const pllTPS = pllTime > 0 ? pllMoves / pllTime : 0;
 
         const html = `
       <div style="
@@ -101,25 +112,40 @@ export class RecentSolveView {
           max-width: 700px;
           margin: auto;
       ">
-        <h2 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px;">Recent Solve</h2>
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
-          <div style="flex: 1;">
-            <h3 style="margin: 0 0 5px 0; font-size: 1rem;text-align:center;">Time</h3>
-            <p style="margin: 0; font-size: 0.9rem;text-align:center;">${totalTimeSec.toFixed(2)} s</p>
+        <h2 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; text-align: center;">
+          Recent Solve
+        </h2>
+        <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Time</h3>
+            <p style="margin: 0;">${totalTimeSec.toFixed(2)} s</p>
           </div>
-          <div style="flex: 1;">
-            <h3 style="margin: 0 0 5px 0; font-size: 1rem;text-align:center;">Moves</h3>
-            <p style="margin: 0; font-size: 0.9rem;text-align:center;">${totalMoves}</p>
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Moves</h3>
+            <p style="margin: 0;">${totalMoves}</p>
           </div>
-          <div style="flex: 1;">
-            <h3 style="margin: 0 0 5px 0; font-size: 1rem;text-align:center;">TPS</h3>
-            <p style="margin: 0; font-size: 0.9rem;text-align:center;">${overallTPS.toFixed(2)}</p>
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">TPS</h3>
+            <p style="margin: 0;">${overallTPS.toFixed(2)}</p>
           </div>
         </div>
-        <div style="border-top: 1px solid #444; padding-top: 10px;">
-          <h3 style="margin: 0 0 10px 0; font-size: 1rem;">Stage Breakdown</h3>
-          <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-            ${stagesHtml}
+        <div>
+          <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">Stage Breakdown</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;">
+            ${this._renderBigStageBox('Cross', crossTime, crossMoves, crossTPS)}
+            <div style="flex: 1 1 300px;">
+              <div style="display: flex; gap: 10px; justify-content: space-around; flex-wrap: nowrap;">
+                ${this._renderSmallStageBox('F1', f1Time, f1Moves, f1TPS)}
+                ${this._renderSmallStageBox('F2', f2Time, f2Moves, f2TPS)}
+                ${this._renderSmallStageBox('F3', f3Time, f3Moves, f3TPS)}
+                ${this._renderSmallStageBox('F4', f4Time, f4Moves, f4TPS)}
+              </div>
+              <div style="margin-top: 10px;">
+                ${this._renderBigStageBox('F2L Overall', overallF2LTime, overallF2LMoves, overallF2LTPS)}
+              </div>
+            </div>
+            ${this._renderBigStageBox('OLL', ollTime, ollMoves, ollTPS)}
+            ${this._renderBigStageBox('PLL', pllTime, pllMoves, pllTPS)}
           </div>
         </div>
       </div>
@@ -129,27 +155,71 @@ export class RecentSolveView {
     }
 
     /**
-     * Helper to render an individual stage breakdown box.
+     * Renders a big stage box.
+     * The heading is the stage name and the main text is the time (displayed prominently).
+     * Moves and TPS are displayed on a separate, smaller line below.
      *
-     * @param {string} label - The stage label (e.g., "Cross", "F1", etc.)
-     * @param {number} time - The time for this stage (in seconds)
-     * @param {number} moves - The number of moves for this stage
-     * @param {number} tps - The turns per second for this stage
-     * @returns {string} HTML string for the stage box.
+     * @param {string} label - The stage label.
+     * @param {number} time - Time in seconds.
+     * @param {number} moves - Number of moves.
+     * @param {number} tps - Turns per second.
+     * @returns {string} HTML string.
      */
-    _renderStageBox(label, time, moves, tps) {
+    _renderBigStageBox(label, time, moves, tps) {
         return `
       <div style="
           flex: 1 1 150px;
           background-color: #3a3a3a;
+          padding: 15px;
+          border-radius: 8px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+      ">
+        <h4 style="margin: 0 0 10px 0;">${label}</h4>
+        <div style="font-size: 2rem; font-weight: bold; margin-bottom: 5px; white-space: nowrap;">
+          ${time.toFixed(2)} s
+        </div>
+        <div style="font-size: 0.8rem; color: #ccc;">
+          Moves: ${moves} | TPS: ${tps.toFixed(2)}
+        </div>
+      </div>
+    `;
+    }
+
+    /**
+     * Renders a small stage box for individual F2L sub-stages.
+     * The heading is the sub-stage label and the main text is the time.
+     * Moves and TPS are shown below in a smaller font.
+     *
+     * @param {string} label - The sub-stage label (e.g., "F1").
+     * @param {number} time - Time in seconds.
+     * @param {number} moves - Number of moves.
+     * @param {number} tps - Turns per second.
+     * @returns {string} HTML string.
+     */
+    _renderSmallStageBox(label, time, moves, tps) {
+        return `
+      <div style="
+          flex: 1 1 70px;
+          background-color: #4a4a4a;
           padding: 10px;
           border-radius: 6px;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
       ">
-        <h4 style="margin: 0 0 5px 0; font-size: 1rem;">${label}</h4>
-        <p style="margin: 4px 0; font-size: 0.85rem;">Time: ${time.toFixed(2)} s</p>
-        <p style="margin: 4px 0; font-size: 0.85rem;">Moves: ${moves}</p>
-        <p style="margin: 4px 0; font-size: 0.85rem;">TPS: ${tps.toFixed(2)}</p>
+        <h5 style="margin: 0 0 8px 0; font-size: 0.9rem;">${label}</h5>
+        <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 3px; white-space: nowrap;">
+          ${time.toFixed(2)} s
+        </div>
+        <div style="font-size: 0.7rem; color: #ccc;">
+          ${moves} moves, ${tps.toFixed(2)} TPS
+        </div>
       </div>
     `;
     }
