@@ -25,12 +25,12 @@
     /* Grid container divides the screen: 1fr for controls, 3fr for main view */
     .grid-container {
       display: grid;
-      grid-template-columns: 1fr 3fr;
+      grid-template-columns: 4fr 5fr;
       height: 100vh;
     }
 
     /* Controls Column */
-    .controls {
+    .controls-container {
       padding: 20px;
       box-sizing: border-box;
       border-right: 1px solid #ccc;
@@ -43,18 +43,27 @@
       font-size: 1.8em;
     }
 
+    icon {
+      display: inline-flex;
+      text-align: center;
+      align-items: center;
+    }
+
+    .gap-5 {
+      gap: 1.25rem;
+    }
+
     .checkpoint-view {
-      padding: 10px;
       border-radius: 4px;
-      overflow-y: auto;
     }
 
     /* Main View Column */
     .main-view {
       box-sizing: border-box;
-      display: grid;
-      grid-template-rows: auto auto;
-      justify-items: center;
+      display: flex;
+      flex-direction: column;
+      /* grid-template-rows: auto auto;*/
+       justify-items: center; 
     }
 
     #app {
@@ -80,8 +89,8 @@
 <body>
   <div class="grid-container">
     <!-- Controls Column (1 part) -->
-    <div class="controls">
-      <div class="flex justify-around">
+    <div class="controls-container">
+      <div class="flex justify-around controls">
         <button id="qiyi-connect-btn">
           <icon>
             <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em"
@@ -118,12 +127,16 @@
         </button>
       </div>
       <!-- Checkpoint view occupies the remaining vertical space -->
-      <div id="checkpoint-view" class="relative checkpoint-view">
-        <h2>Checkpoint View</h2>
+      <div class="relative checkpoint-view">
+        <div id="recent-solve-view">
+
+        </div>
       </div>
 
       <div>
-        <h2> History </h2>
+        <h2 class="flex gap-5 align-center">
+          History
+        </h2>
         <div id="solve-history-view">
         </div>
       </div>
@@ -131,11 +144,13 @@
 
     <!-- Main View Column (3 parts) -->
     <div class="main-view">
+      <div class="flex justify-around">
+      <div id="cube">
+      </div>
+    </div>
       <div id="app">
         <h1 id="scramble-display"></h1>
         <h1 id="timer-display"></h1>
-      </div>
-      <div id="cube">
       </div>
     </div>
   </div>
