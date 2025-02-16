@@ -95,12 +95,17 @@ button:hover {
 }
 
 /* Active state styles */
-.gizmos-btn.active {
-  background-color: #ddd;
+.controls > button.active {
+  background-color: #aaa;
 }
 
-.gizmos-btn.active svg {
-  stroke: #000;
+.controls > button.active svg {
+  stroke: #333;
+}
+
+.controls #auto-timer-btn.active svg,
+#auto-scramble-on-solve-btn.active svg {
+  fill: #333;
 }
 
 span.done {

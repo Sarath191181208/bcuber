@@ -21,10 +21,11 @@ const scrambleButton = selectElement('#scramble-button')
 const scrambleDisplay = selectElement('#scramble-display')
 const timerDisplay = selectElement('#timer-display')
 const recentSolvedStatsView = selectElement('#recent-solve-view')
+const autoTimerButton = selectElement('#auto-timer-btn')
+const autoScrambleOnSolveButton = selectElement('#auto-scramble-on-solve-btn')
 const historyTableContainer = selectElement('#solve-history-view')
 
 const debugCubeContainer = document.querySelector('#debug-cube-container')
-
 const timer = new CubeTimer(timerDisplay)
 const scrambleHandler = new ScrambleHandler(scrambleDisplay);
 /**
@@ -51,6 +52,13 @@ let cubeSolvingState = {
     f2lSolved: null
   },
 }
+
+let turnInspectionOnAutomatically = false
+toggleAutoTimer(); // this is to set the initial state of the button
+
+let autoScrambleOnSolve = false
+toggleAutoScrambleOnSolve(); // this is to set the initial state of the button
+
 
 // Create the cube and controller instances
 const cube = new RubiksCubeComponent(cubeRenderDiv)
@@ -81,6 +89,13 @@ function onCubeMove(x) {
     return
   }
 
+  if (currentState == CubeState.SCRAMBLING_COMPLETE) {
+    // and on next cube move
+    currentState = CubeState.SOLVING
+    timer.startTimer()
+    timer.resetInspectionTimer()
+  }
+
   if (currentState === CubeState.SOLVING) {
     // add the move to the solve data for saving
     inputMoveStr.split(/\s+/).forEach(move => solve?.addMove(move))
@@ -102,6 +117,10 @@ function onCubeMove(x) {
       recentSolvedViewHandler.solveData = historyHandler.solves[historyHandler.solves.length - 1]
       recentSolvedViewHandler.render()
       historyHandler.render()
+
+      if (autoScrambleOnSolve) {
+        scrambleCube()
+      }
     }
 
     // check if the cross is done 
@@ -137,18 +156,20 @@ function onCubeMove(x) {
     }
   }
 
-  if (currentState == CubeState.SCRAMBLING_COMPLETE) {
-    currentState = CubeState.SOLVING
-    timer.startTimer()
-    scrambleHandler.reset()
-  }
-
   if (currentState === CubeState.SCRAMBLING) {
     const moves = inputMoveStr.toUpperCase().trim().split(/\s+/);
     scrambleHandler.processMoves(moves);
     if (scrambleHandler.isScrambleComplete()) {
       currentState = CubeState.SCRAMBLING_COMPLETE;
       cubeSolvingState.state = CubeSolvingStateEnum.SCRAMBLED;
+      scrambleHandler.reset()
+
+      if (turnInspectionOnAutomatically) {
+        timer.startInspectionTimer(() => {
+          currentState = CubeState.SOLVING
+          timer.startTimer()
+        });
+      }
     }
   }
 }
@@ -195,6 +216,16 @@ scrambleButton.addEventListener('click', async () => {
   await scrambleCube()
 })
 
+// Toggle the auto timer on/off and update the button's active class accordingly
+autoTimerButton.addEventListener('click', () => {
+  toggleAutoTimer()
+});
+
+// Toggle the auto scramble on solve on/off and update the button's active class accordingly
+autoScrambleOnSolveButton.addEventListener('click', () => {
+  toggleAutoScrambleOnSolve()
+});
+
 async function connectWithBluetooth() {
   qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
   const connected = await qiyiHandler.connectCube()
@@ -220,5 +251,23 @@ async function scrambleCube() {
     const randScramble = await randomScrambleForEvent("333")
     solve = new SolveData(randScramble.toString())
     scrambleHandler.setScramble(randScramble)
+  }
+}
+
+async function toggleAutoTimer() {
+  turnInspectionOnAutomatically = !turnInspectionOnAutomatically
+  if (turnInspectionOnAutomatically) {
+    autoTimerButton.classList.add('active')
+  } else {
+    autoTimerButton.classList.remove('active')
+  }
+}
+
+async function toggleAutoScrambleOnSolve() {
+  autoScrambleOnSolve = !autoScrambleOnSolve
+  if (autoScrambleOnSolve) {
+    autoScrambleOnSolveButton.classList.add('active')
+  } else {
+    autoScrambleOnSolveButton.classList.remove('active')
   }
 }

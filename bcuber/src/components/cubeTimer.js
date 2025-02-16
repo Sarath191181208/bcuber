@@ -11,6 +11,11 @@ export class CubeTimer {
         this.timer = null
         this.startTime = null
         this.segments = []
+
+
+        this.inspectionStartTime = null
+        this.inspectionTimer = null
+        this.inspectViewTimer = null
     }
 
     /**
@@ -29,11 +34,42 @@ export class CubeTimer {
     }
 
     /**
+     * Starts the inspection timer.
+     * @param {() => void} fn
+     */
+    startInspectionTimer(fn) {
+        this.resetInspectionTimer()
+        this.inspectionStartTime = Date.now()
+        this.inspectionTimer = setTimeout(() => {
+            fn()
+        }, 15000)
+
+        // update the timer every 1s
+        this.inspectViewTimer = setInterval(() => {
+            // @ts-ignore
+            const elapsedTime = (Date.now() - this.inspectionStartTime) / 1000
+            if (this.timerElement) {
+                this.timerElement.innerText = (15 - elapsedTime).toFixed(0)
+            }
+        }, 1000)
+    }
+
+    /**
+     * Cancels the inspection timer.
+    */
+    resetInspectionTimer() {
+        this.inspectionStartTime = null;
+        clearTimeout(this.inspectionTimer ?? 0)
+        clearInterval(this.inspectViewTimer ?? 0)
+    }
+
+
+    /**
      * save checkpoint segment 
      */
     saveCheckpoint() {
         if (this.startTime) {
-            if(this.segments.length > 1 + 4 + 1 + 1) {
+            if (this.segments.length > 1 + 4 + 1 + 1) {
                 throw new Error("Too many checkpoints")
             }
             // @ts-ignore
@@ -46,6 +82,8 @@ export class CubeTimer {
      */
     stopTimer() {
         clearInterval(this.timer ?? 0)
+        clearInterval(this.inspectViewTimer ?? 0)
+        clearTimeout(this.inspectionTimer ?? 0)
     }
 
     /**
