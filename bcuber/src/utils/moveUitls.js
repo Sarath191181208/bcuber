@@ -42,26 +42,55 @@ export function simplify(scramble) {
         newMovesStack.push(currentMove)
 
         if (newMovesStack.length >= 2) {
-            const lastMove = newMovesStack[newMovesStack.length - 2]
-            if (lastMove === getInverse(currentMove)) {
+            const m1 = newMovesStack[newMovesStack.length - 2]
+            const m2 = newMovesStack[newMovesStack.length - 1]
+            const betterMove = getBetterMove(m1, m2)
+            if (betterMove != null) {
                 newMovesStack.pop()
                 newMovesStack.pop()
-            }
-        }
-
-        // check if the stack has two moves already added 
-        if (newMovesStack.length >= 3) {
-            const firstMove = newMovesStack[newMovesStack.length - 3]
-            const secondMove = newMovesStack[newMovesStack.length - 2]
-            const thirdMove = newMovesStack[newMovesStack.length - 1]
-            if (firstMove == secondMove && secondMove == thirdMove) {
-                newMovesStack.pop()
-                newMovesStack.pop()
-                newMovesStack.pop()
-                newMovesStack.push(getInverse(secondMove))
+                newMovesStack.push(betterMove)
             }
         }
     }
 
-    return newMovesStack.join(" ")
+    // the replace is done to remove any extra spaces which can arise if we join empty string
+    return newMovesStack.join(" ").replace(/\s+/g, " ")
+}
+
+/**
+ * @param {string} m1
+ * @param {string} m2
+ */
+function getBetterMove(m1, m2) {
+    m1 = m1.trim().toUpperCase()
+    m2 = m2.trim().toUpperCase()
+
+    const getBase = (move) => move.replace(/[2']/g, "");
+
+    const m1Base = getBase(m1)
+    const m2Base = getBase(m2)
+    if (m1Base !== m2Base) return null
+
+    if (m1 === getInverse(m2)) return ""
+
+    const ARE_BOTH_DOUBLE = m1.endsWith("2") && m2.endsWith("2");
+    if (ARE_BOTH_DOUBLE) {
+        return null
+    }
+
+    const IS_ANY_DOUBLE = m1.endsWith("2") || m2.endsWith("2");
+    if (IS_ANY_DOUBLE) {
+        const doubleMove = m1.endsWith("2") ? m1 : m2
+        const singleMove = m1.endsWith("2") ? m2 : m1
+
+        if (doubleMove.replace("2", "") === singleMove) return getInverse(singleMove)
+        if (getBase(doubleMove) === getInverse(singleMove)) return getBase(doubleMove)
+
+        return null;
+    }
+
+
+    if (m1 === m2) return `${m1}2`.replace(/\s+/g, " ").replace("2 2", "2").replace("'", "")
+
+    return null
 }
