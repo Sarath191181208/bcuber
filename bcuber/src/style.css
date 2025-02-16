@@ -107,6 +107,10 @@ span.done {
   color: #00ff00;
 }
 
+span.half-done {
+  color: #ffcc00;
+}
+
 .history-table {
   background: #1e1e1e;
   color: #f0f0f0;

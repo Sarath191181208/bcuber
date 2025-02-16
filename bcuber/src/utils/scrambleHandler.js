@@ -12,6 +12,8 @@ export class ScrambleHandler {
         this.displayElement = displayElement;
         this.scrambleAlg = new Alg();
         this.scrambleIdx = 0;
+        // Holds a pending quarter–move when a double move is only half-completed.
+        this.pendingHalf = null;
     }
 
     /**
@@ -25,48 +27,107 @@ export class ScrambleHandler {
 
     /**
      * Updates the scramble display.
-     * Moves that have been executed (index less than scrambleIdx) are "greyed out" via a CSS class.
+     * Moves that have been executed (index less than scrambleIdx) are "greyed out".
+     * If a double move is half-completed, it gets a "half-done" CSS class.
      */
     updateDisplay() {
         const moves = this.getScrambleMoves();
         this.displayElement.innerHTML = moves
-            .map((move, index) =>
-                index < this.scrambleIdx
-                    ? `<span class="done">${move}</span>`
-                    : `<span>${move}</span>`
-            )
+            .map((move, index) => {
+                if (index < this.scrambleIdx) {
+                    return `<span class="done">${move}</span>`;
+                } else if (
+                    index === this.scrambleIdx &&
+                    move.endsWith("2") &&
+                    this.pendingHalf !== null
+                ) {
+                    return `<span class="half-done">${move}</span>`;
+                } else {
+                    return `<span>${move}</span>`;
+                }
+            })
             .join(" ");
     }
 
     /**
      * Checks a single move against the expected scramble move.
-     * If correct, increments scrambleIdx and updates the display.
+     * If correct, increments scrambleIdx (or awaits a second half for a double move)
+     * and updates the display.
      * If incorrect, returns the inverse move.
+     *
+     * For expected moves ending with "2" (e.g. "U2"):
+     *   - The full move (e.g. "U2") is accepted immediately.
+     *   - Alternatively, if the user provides a quarter–move (either "U" or "U'"),
+     *     it is marked as half complete. The second half must match the first.
+     *   - If the second half does not match, the move is considered wrong.
      *
      * @param {string} singleMove - A single move input (e.g. "R", "U'", etc.).
      * @returns {string | null} The inverse move if the input move is incorrect; otherwise null.
      */
     checkMove(singleMove) {
         const move = singleMove.trim().toUpperCase();
+
+        // If we're in the middle of a double move (one half already applied)
+        if (this.pendingHalf !== null) {
+            // The second half must match the pending half (e.g. if first half was "U", second must be "U")
+            if (move === this.pendingHalf) {
+                // Correct completion of the double move:
+                this.pendingHalf = null;
+                this.scrambleIdx++;
+                this.updateDisplay();
+                return null;
+            } else {
+                // Wrong second half – return inverse of the pending half as a correction.
+                const correction = getInverse(this.pendingHalf);
+                // Clear the pending half since the double move wasn’t completed properly.
+                this.pendingHalf = null;
+                this.updateDisplay();
+                return correction;
+            }
+        }
+
+        // No pending half move; get the expected move.
         const expected = this.getScrambleMoves()[this.scrambleIdx];
-        if (move === expected) {
-            this.scrambleIdx++;
-            this.updateDisplay();
-            return null;
+
+        // If the expected move is NOT a double move:
+        if (!expected.endsWith("2")) {
+            if (move === expected) {
+                this.scrambleIdx++;
+                this.updateDisplay();
+                return null;
+            } else {
+                return getInverse(move);
+            }
         } else {
-            return getInverse(singleMove);
+            // Expected move is a double move (ends with "2"), e.g. "U2".
+            const face = expected[0]; // e.g. "U"
+            // Option 1: User inputs the full double move (like "U2")
+            if (move === expected) {
+                this.scrambleIdx++;
+                this.updateDisplay();
+                return null;
+            }
+            // Option 2: User inputs a quarter–move.
+            // Allow either quarter turn (clockwise or anticlockwise)
+            else if (move === face || move === face + "'") {
+                // Mark the move as half-complete.
+                this.pendingHalf = move;
+                this.updateDisplay();
+                return null;
+            } else {
+                // Move is not acceptable.
+                return getInverse(move);
+            }
         }
     }
 
     /**
-     * Process multiple moves
+     * Process multiple moves.
      * @param {string[]} moves - The moves to process.
-     *
      */
     processMoves(moves) {
         let i = 0;
         for (; i < moves.length; i++) {
-            // Use the ScrambleHandler to check the move.
             const correctionMove = this.checkMove(moves[i]);
             if (correctionMove) {
                 console.log("Incorrect move, correcting with: ", correctionMove);
@@ -99,18 +160,29 @@ export class ScrambleHandler {
      * combines them with the remaining scramble, simplifies the result,
      * and then updates the scramble algorithm and resets the scramble index.
      *
+     * Additionally, if a double move was only half-completed, it will be reverted.
+     *
      * @param {string[]} moves - The moves input by the user.
      * @param {number} processedCount - The number of moves that were processed correctly.
      */
     processError(moves, processedCount) {
+        // If a half move is pending, include its inverse in the reversal.
+        let extraReverse = "";
+        if (this.pendingHalf !== null) {
+            extraReverse = getInverse(this.pendingHalf);
+            this.pendingHalf = null;
+        }
         const reverseMoves = this.getReverseMoves(moves, processedCount);
-        if (reverseMoves !== "") {
-            // Get the remaining scramble moves after the processed moves.
+        // Combine any extra reverse (from pending half) with the rest.
+        const fullReverse = extraReverse ? `${extraReverse} ${reverseMoves}` : reverseMoves;
+
+        if (fullReverse.trim() !== "") {
+            // Get the remaining scramble moves.
+            // Note: processedCount includes any quarter–move that was applied.
             const remainingMoves = this.getScrambleMoves()
                 .slice(this.scrambleIdx + processedCount)
                 .join(" ");
-            // Combine the reverse moves with the remaining moves and simplify.
-            const newScrambleStr = simplify(`${reverseMoves} ${remainingMoves}`);
+            const newScrambleStr = simplify(`${fullReverse} ${remainingMoves}`);
             // Create a new scramble using the simplified string.
             this.scrambleAlg = new Alg(newScrambleStr).experimentalSimplify();
             this.scrambleIdx = 0;
@@ -124,6 +196,7 @@ export class ScrambleHandler {
     reset() {
         this.scrambleAlg = new Alg();
         this.scrambleIdx = 0;
+        this.pendingHalf = null;
         this.updateDisplay();
     }
 
@@ -135,14 +208,16 @@ export class ScrambleHandler {
      */
     setScramble(scramble) {
         this.scrambleAlg = new Alg(
-            scramble.toString().split(/\s+/).map(normalizeMove).join(" ")
+            scramble
+            // scramble.toString().split(/\s+/).map(normalizeMove).join(" ")
         );
         this.scrambleIdx = 0;
+        this.pendingHalf = null;
         this.updateDisplay();
     }
 
     /**
-     * Chekc if the scramble is complete
+     * Check if the scramble is complete.
      * @returns {boolean} True if the scramble is complete; otherwise, false.
      */
     isScrambleComplete() {
