@@ -12,6 +12,7 @@ import { selectElement } from './utils/domUtils.js'
 import { CubeSolvingStateEnum, CubeState } from './types.js'
 import { BluetoothConnectedIcon, BluetoothConnectingIcon } from './utils/icons.js'
 import { SolveData, SolveDataTable } from './utils/solveData.js'
+import { RecentSolveView } from './components/recent-solve-view.js'
 
 const qiyiConnectButton = selectElement('#qiyi-connect-btn')
 const cubeRenderDiv = selectElement('#cube')
@@ -19,7 +20,7 @@ const toggleGizmosButton = selectElement('#toggle-gizmos-btn')
 const scrambleButton = selectElement('#scramble-button')
 const scrambleDisplay = selectElement('#scramble-display')
 const timerDisplay = selectElement('#timer-display')
-const checkpointDisplay = selectElement('#checkpoint-view')
+const recentSolvedStatsView = selectElement('#recent-solve-view')
 const historyTableContainer = selectElement('#solve-history-view')
 
 const debugCubeContainer = document.querySelector('#debug-cube-container')
@@ -31,6 +32,9 @@ const scrambleHandler = new ScrambleHandler(scrambleDisplay);
 */
 let solve = null;
 const historyHandler = new SolveDataTable(historyTableContainer)
+
+const recentSolvedViewHandler = new RecentSolveView(recentSolvedStatsView, historyHandler.solves[0])
+recentSolvedViewHandler.render()
 
 /**
  * @type {CubeState}
@@ -81,10 +85,6 @@ function onCubeMove(x) {
   }
 
   if (currentState === CubeState.SOLVING) {
-    // show the timer checkpoitns 
-    const buildCheckpoint = (data) => /*html*/ `<div>${data}</div>`
-    checkpointDisplay.innerHTML = timer.getCheckpointSegments().map(buildCheckpoint).join("")
-
     // use facelet to decide the state of the cube
     // if the facelet is solved, then the cube is solved
     if (facelet === "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB") {
@@ -99,6 +99,9 @@ function onCubeMove(x) {
       solve?.cloneFromTimer(timer)
       historyHandler.addSolve(solve)
       solve = null
+
+      recentSolvedViewHandler.solveData = historyHandler.solves[0]
+      recentSolvedViewHandler.render()
       historyHandler.render()
     }
 
@@ -206,7 +209,7 @@ async function connectWithBluetooth() {
 }
 
 // on b connect with bluetooth 
-document.body.addEventListener('keydown', async (e) => { 
+document.body.addEventListener('keydown', async (e) => {
   if (e.key === "b") {
     await connectWithBluetooth()
   }
