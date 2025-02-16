@@ -99,7 +99,7 @@ function onCubeMove(x) {
       historyHandler.addSolve(solve)
       solve = null
 
-      recentSolvedViewHandler.solveData = historyHandler.solves[0]
+      recentSolvedViewHandler.solveData = historyHandler.solves[historyHandler.solves.length - 1]
       recentSolvedViewHandler.render()
       historyHandler.render()
     }
