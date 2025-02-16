@@ -104,7 +104,7 @@ export class RecentSolveView {
 
         const html = `
       <div style="
-          background-color: #2e2e2e;
+          background-color: #1e1e1e;
           color: #f0f0f0;
           padding: 20px;
           border-radius: 8px;
@@ -169,7 +169,7 @@ export class RecentSolveView {
         return `
       <div style="
           flex: 1 1 150px;
-          background-color: #3a3a3a;
+          background-color: #262626;
           padding: 15px;
           border-radius: 8px;
           text-align: center;
@@ -204,7 +204,7 @@ export class RecentSolveView {
         return `
       <div style="
           flex: 1 1 70px;
-          background-color: #4a4a4a;
+          background-color: #282828;
           padding: 10px;
           border-radius: 6px;
           text-align: center;
