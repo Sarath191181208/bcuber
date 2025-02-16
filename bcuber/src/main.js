@@ -33,7 +33,7 @@ const scrambleHandler = new ScrambleHandler(scrambleDisplay);
 let solve = null;
 const historyHandler = new SolveDataTable(historyTableContainer)
 
-const recentSolvedViewHandler = new RecentSolveView(recentSolvedStatsView, historyHandler.solves[0])
+const recentSolvedViewHandler = new RecentSolveView(recentSolvedStatsView, historyHandler.solves[historyHandler.solves.length - 1])
 recentSolvedViewHandler.render()
 
 /**
