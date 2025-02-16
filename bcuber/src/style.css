@@ -84,9 +84,8 @@ button:hover {
 
 #cube {
   width: 100%;
-  min-width: 500px;
-  max-width: 500px;
-  max-height: 600px;
+  width: 400px;
+  max-height: 400px;
   height: 80vh;
 }
 
@@ -106,4 +105,24 @@ button:hover {
 
 span.done {
   color: #00ff00;
+}
+
+.history-table {
+  background: #1e1e1e;
+  color: #f0f0f0;
+  padding: 20px;
+  border-radius: 10px;
+  font-family: "Segoe UI", sans-serif;
+  max-width: 900px;
+  margin: 20px auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.solve-row {
+  border-bottom: 1px solid #444;
+  transition: background 0.2s;
+}
+
+.solve-row:hover {
+  background: #2c2c2c;
 }
