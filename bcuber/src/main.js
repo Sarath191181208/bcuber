@@ -77,14 +77,13 @@ function onCubeMove(x) {
   // animate the cube 
   cube.addMoves(inputMoveStr)
 
-  // add the move to the solve data for saving
-  inputMoveStr.split(/\s+/).forEach(move => solve?.addMove(move))
-
   if (currentState === CubeState.LIVE) {
     return
   }
 
   if (currentState === CubeState.SOLVING) {
+    // add the move to the solve data for saving
+    inputMoveStr.split(/\s+/).forEach(move => solve?.addMove(move))
     // use facelet to decide the state of the cube
     // if the facelet is solved, then the cube is solved
     if (facelet === "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB") {
