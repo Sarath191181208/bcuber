@@ -54,8 +54,10 @@ export class QiYiCubeController {
         }
         // @ts-ignore
         return navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: [this.config.SERVICE_UUID]
+            // acceptAllDevices: true,
+            optionalServices: [this.config.SERVICE_UUID],
+            // filters: [{ services: [this.config.SERVICE_UUID] }] // Filter by the QiYi service UUID
+            filters: [{ namePrefix: 'QY-QYSC' }]
         });
     }
 
@@ -153,7 +155,7 @@ export class QiYiCubeController {
             const newFacelet = CubeParser.parseFacelet(msg.slice(7, 34));
 
             if (this.renderContainer)
-            drawFacelet(newFacelet, this.renderContainer);
+                drawFacelet(newFacelet, this.renderContainer);
 
             console.info('[battery] Battery level:', this.batteryLevel);
             console.info('[qiyicube] Cube hello:', newFacelet);
