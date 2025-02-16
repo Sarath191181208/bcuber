@@ -1,6 +1,7 @@
 //@ts-check
 
 import { CubeTimer } from "../components/cubeTimer";
+import { HistoryIcon } from "./icons";
 
 export class SolveData {
     /**
@@ -75,32 +76,44 @@ export class SolveDataTable {
     }
 
     render() {
-        // Set up toggle button text and icon based on current view mode.
+        // Determine the toggle button's icon and text based on the view mode.
         const toggleButtonIcon = this.viewMode === 'time' ? '✋' : '⏱️';
         const toggleButtonText = this.viewMode === 'time' ? 'Switch to Moves View' : 'Switch to Time View';
 
-        let html = `
-            <button id="toggleViewButton" style="margin-bottom:10px; padding: 6px 12px; cursor:pointer;">
-                ${toggleButtonText} ${toggleButtonIcon}
-            </button>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th style="">Cross</th>
-                        <th style="">F2L 1</th>
-                        <th style="">F2L 2</th>
-                        <th style="">F2L 3</th>
-                        <th style="">F2L 4</th>
-                        <th style="">OLL</th>
-                        <th style="">PLL</th>
-                        <th style="">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        let html = /*html*/`
+    <div class="history-table">
+      <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      ">
+        <h2 style="margin: 0; font-size: 1.75rem;display:flex;gap:5px;"><icon>${HistoryIcon}</icon>Solve History</h2>
+        <button>
+          ${toggleButtonText} ${toggleButtonIcon}
+        </button>
+      </div>
+      <table style="
+        width: 100%;
+        border-collapse: collapse;
+      ">
+        <thead>
+          <tr style="background: #2c2c2c;">
+            <th style="padding: 12px; border: 1px solid #444;">Cross</th>
+            <th style="padding: 12px; border: 1px solid #444;">F2L 1</th>
+            <th style="padding: 12px; border: 1px solid #444;">F2L 2</th>
+            <th style="padding: 12px; border: 1px solid #444;">F2L 3</th>
+            <th style="padding: 12px; border: 1px solid #444;">F2L 4</th>
+            <th style="padding: 12px; border: 1px solid #444;">OLL</th>
+            <th style="padding: 12px; border: 1px solid #444;">PLL</th>
+            <th style="padding: 12px; border: 1px solid #444;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
 
         this.solves.forEach(s => {
-            // We expect 8 checkpoints: [0, cross, f2l1, f2l2, f2l3, f2l4, oll, pll]
+            // We expect 7 checkpoints: [cross, f2l1, f2l2, f2l3, f2l4, oll, pll]
             const checkpoints = s.checkpoints || [];
             if (checkpoints.length < 7 || !s.startTime || !s.endTime) return;
 
@@ -128,55 +141,35 @@ export class SolveDataTable {
             // Total time (in seconds) from solve start to end.
             const totalTime = ((s.endTime - s.startTime) / 1000).toFixed(2);
 
-            // Helper function: returns cell content based on the current view mode.
+            // Helper function: returns cell content based on current view mode.
             const cell = (time, moves) => {
-                if (this.viewMode === 'time') {
-                    return `${time.toFixed(2)} s`;
-                } else {
-                    return `${moves}`;
-                }
+                return this.viewMode === 'time' ? `${time.toFixed(2)} s` : `${moves}`;
             };
 
-            html += /*html*/`
-                <tr>
-                    <td style="text-align: center;">
-                        ${cell(crossTime, crossMoves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${cell(f2l1, f2l1Moves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${cell(f2l2, f2l2Moves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${cell(f2l3, f2l3Moves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${cell(f2l4, f2l4Moves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${cell(oll, ollMoves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${cell(pll, pllMoves)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${this.viewMode === 'time'
-                    ? `${totalTime} s`
-                    : `${s.moves.length} moves`
-                }
-                    </td>
-                </tr>
-            `;
+            html += `
+      <tr class="solve-row">
+        <td style="text-align: center; padding: 12px;">${cell(crossTime, crossMoves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(f2l1, f2l1Moves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(f2l2, f2l2Moves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(f2l3, f2l3Moves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(f2l4, f2l4Moves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(oll, ollMoves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(pll, pllMoves)}</td>
+        <td style="text-align: center; padding: 12px;">
+          ${this.viewMode === 'time' ? `${totalTime} s` : `${s.moves.length} moves`}
+        </td>
+      </tr>
+    `;
         });
 
         html += `
-                </tbody>
-            </table>
-        `;
+        </tbody>
+      </table>
+    </div>
+  `;
 
         if (this.solves.length === 0) {
-            html = `<p style='text-align: center; color: #383838'>No solves yet.</p>`;
+            html = `<p style="text-align: center; color: #888;">No solves yet.</p>`;
         }
         this.container.innerHTML = html;
 
@@ -186,6 +179,7 @@ export class SolveDataTable {
             toggleButton.addEventListener("click", () => this.toggleView());
         }
     }
+
 }
 
 const countMovesBetween = (moves, startSec, endSec) => {
