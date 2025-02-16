@@ -24,7 +24,6 @@ const historyTableContainer = selectElement('#solve-history-view')
 
 const debugCubeContainer = document.querySelector('#debug-cube-container')
 
-
 const timer = new CubeTimer(timerDisplay)
 const scrambleHandler = new ScrambleHandler(scrambleDisplay);
 /**
@@ -179,15 +178,7 @@ cube.toggleGizmos(gizmosActive)
 
 // Connect QIYI Cube when the connect button is clicked
 qiyiConnectButton.addEventListener('click', async () => {
-  qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
-  const connected = await qiyiHandler.connectCube()
-  if (connected) {
-    qiyiConnectButton.innerHTML = /*html */ `<icon>${BluetoothConnectedIcon}</icon>`
-    await scrambleCube()
-  } else {
-    qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
-    qiyiConnectButton.style.border = "1px solid red"
-  }
+  connectWithBluetooth();
 })
 
 // Toggle gizmos on/off and update the button's active class accordingly
@@ -201,6 +192,25 @@ toggleGizmosButton.addEventListener('click', () => {
 scrambleButton.addEventListener('click', async () => {
   await scrambleCube()
 })
+
+async function connectWithBluetooth() {
+  qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
+  const connected = await qiyiHandler.connectCube()
+  if (connected) {
+    qiyiConnectButton.innerHTML = /*html */ `<icon>${BluetoothConnectedIcon}</icon>`
+    await scrambleCube()
+  } else {
+    qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`
+    qiyiConnectButton.style.border = "1px solid red"
+  }
+}
+
+// on b connect with bluetooth 
+document.body.addEventListener('keydown', async (e) => { 
+  if (e.key === "b") {
+    await connectWithBluetooth()
+  }
+});
 
 async function scrambleCube() {
   if (currentState !== CubeState.SCRAMBLING) {
