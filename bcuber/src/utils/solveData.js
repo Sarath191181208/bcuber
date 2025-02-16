@@ -89,7 +89,7 @@ export class SolveDataTable {
         margin-bottom: 20px;
       ">
         <h2 style="margin: 0; font-size: 1.75rem;display:flex;gap:5px;"><icon>${HistoryIcon}</icon>Solve History</h2>
-        <button>
+        <button id="toggleViewButton">
           ${toggleButtonText} ${toggleButtonIcon}
         </button>
       </div>
