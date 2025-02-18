@@ -26,6 +26,12 @@ import { rotateCubeToDFace } from "./utils";
  *                        or null if no cross is solved or if rotation fails.
  */
 export function getF2LPairsSolved(facelet, crossFace) {
+    // check only if the current cross face is solved 
+    const solvedCrossColor = getCrossSolvedColor(facelet);
+    if (solvedCrossColor !== crossFace) {
+        console.warn(`[F2L]: Cross is not solved on ${crossFace}.`);
+        return null;
+    }
     let orientedFacelet;
     try {
         orientedFacelet = rotateCubeToDFace(facelet, crossFace);
