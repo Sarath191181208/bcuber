@@ -11,8 +11,8 @@ export class SolveData {
         this.scramble = scramble;   // The scramble string used for the solve
         this.moves = [];            // Array of { move: string, timestamp: number }
         this.checkpoints = [];      // Array of checkpoint timestamps (in ms from start)
-        this.startTime = null;      // Solve start time (to be set when started)
-        this.endTime = null;        // Solve end time (to be set when solved)
+        this.startTime = 0;      // Solve start time (to be set when started)
+        this.endTime = 0;        // Solve end time (to be set when solved)
     }
 
     /**
@@ -26,7 +26,7 @@ export class SolveData {
      * @param {CubeTimer} cubeTimer
      */
     cloneFromTimer(cubeTimer) {
-        this.startTime = cubeTimer.startTime;
+        this.startTime = cubeTimer.startTime ?? new Date().getTime();
         this.endTime = Date.now();
         this.checkpoints = cubeTimer.getCheckpointSegments();
     }
@@ -112,7 +112,7 @@ export class SolveDataTable {
         <tbody>
   `;
 
-        this.solves.forEach(s => {
+        this.solves.reverse().forEach(s => {
             // We expect 7 checkpoints: [cross, f2l1, f2l2, f2l3, f2l4, oll, pll]
             const checkpoints = s.checkpoints || [];
             if (checkpoints.length < 7 || !s.startTime || !s.endTime) return;
