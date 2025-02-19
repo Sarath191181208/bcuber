@@ -4,13 +4,17 @@
 export class CubeTimer {
     /**
      * Creates an instance of CubeTimer.
+     * @param {number} numSegments - The number of segments to save.
      * @param {HTMLElement | null} timerElement - The HTML element to display the timer. If null, no display updates will occur.
      */
-    constructor(timerElement = null) {
+    constructor(numSegments, timerElement = null) {
         this.timerElement = timerElement
         this.timer = null
         this.startTime = null
+
+        this.numSegments = numSegments
         this.segments = []
+        this.segmentIdx = 0 
 
 
         this.inspectionStartTime = null
@@ -69,11 +73,13 @@ export class CubeTimer {
      */
     saveCheckpoint() {
         if (this.startTime) {
-            if (this.segments.length > 1 + 4 + 1 + 1) {
+            if (this.segmentIdx >= this.numSegments) {
                 throw new Error("Too many checkpoints")
             }
             // @ts-ignore
-            this.segments.push((Date.now() - this.startTime) / 1000)
+            // this.segments.push((Date.now() - this.startTime) / 1000)
+            this.segments[this.segmentIdx] = (Date.now() - this.startTime) / 1000
+            this.segmentIdx += 1
         }
     }
 
@@ -93,7 +99,8 @@ export class CubeTimer {
         if (this.timerElement) {
             this.timerElement.innerText = "0.00"
         }
-        this.segments = []
+        this.segments = new Array(this.numSegments).fill(0)
+        this.segmentIdx = 0
     }
 
     getCheckpointSegments() {
