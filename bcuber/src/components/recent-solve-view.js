@@ -47,9 +47,9 @@ export class RecentSolveView {
 
   render() {
     const s = this.solveData;
-    //if (s === undefined) {
-    //  return;
-    //}
+    if (s === undefined) {
+      return;
+    }
 
     // Validate required data.
     if (!s.startTime || !s.endTime || !s.checkpoints || s.checkpoints.length < 7) {
