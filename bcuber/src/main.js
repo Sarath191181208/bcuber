@@ -1,3 +1,4 @@
+// @ts-check
 import './style.css'
 import { RubiksCubeComponent } from './components/render-cube.js'
 import { QiYiCubeController } from './components/qiyi/cubeController'
