@@ -11,7 +11,7 @@ import { Alg } from 'cubing/alg'
 /**
  *
  */
-export class PracticeEventHandler {
+export class CFOPPracticeEventHandler {
   /**
    * @param {object} options
    * @param {CubeTimer} options.timer
@@ -21,6 +21,25 @@ export class PracticeEventHandler {
     this.timer = options.timer
     this.generateScramble = options.generateScramble
     this.cubeSolvingStateEventManager = new CubeSolvingPhaseEventManager(this.handleEvent.bind(this))
+
+    /**
+     * @type {((arg0: CubeEvent) => {})[]}
+     */
+    this._eventSubscribers = []
+  }
+
+  /**
+   * @param {((arg0: CubeEvent) => {})} callback
+   */
+  subscribeToEvents(callback) {
+    this._eventSubscribers.push(callback)
+  }
+
+  /**
+   * @param {(arg0: CubeEvent) => {}} callback
+   */
+  unsubscribeFromEvents(callback) {
+    this._eventSubscribers = this._eventSubscribers.filter(sub => sub !== callback)
   }
 
   handleSolvedEvent() {
@@ -63,7 +82,10 @@ export class PracticeEventHandler {
     if (event.name == CFOPCubeSolvingPhase.SOLVED) {
       this.handleSolvedEvent()
     }
-    return event;
+
+    for (const subscriber of this._eventSubscribers) {
+      subscriber(event)
+    }
   }
 
 
@@ -76,6 +98,11 @@ export class PracticeEventHandler {
     const { facelet } = x
     this.cubeSolvingStateEventManager.update(facelet)
   }
+
+  reset() {
+    this.cubeSolvingStateEventManager.reset()
+    this.timer.resetTimer()
+  }
 }
 
 /**
@@ -86,23 +113,20 @@ export class PracticeEventHandler {
 export class TrainingManager {
   /**
    * @param {object} options
-   * @param {CubeTimer} options.timer
    * @param {ScrambleHandler} options.scrambleHandler
-   * @param {PracticeEventHandler} options.practiceEventHandler
-   * @param {() => Promise<string>} options.generateScramble - E.g. "333", "f2l", "cross", etc.
+   * @param {CFOPPracticeEventHandler} options.practiceEventHandler
    * @param {(arg0: SolveData) => void} options.onSolve
    * @param {boolean} [options.autoScrambleOnSolve]
    * @param {boolean} [options.turnInspectionOnAutomatically]
    */
   constructor(options) {
-    //this.timer = options.timer
     this.scrambleHandler = options.scrambleHandler
-    //this.generateScramble = options.generateScramble
     this.autoScrambleOnSolve = options.autoScrambleOnSolve || false
     this.practiceEventHandler = options.practiceEventHandler
     this.turnInspectionOnAutomatically = options.turnInspectionOnAutomatically || false
-    //this.cubeSolvingStateEventManager = new CubeSolvingPhaseEventManager(this.handleEvent.bind(this))
     this.onSolve = options.onSolve
+
+    this.practiceEventHandler.subscribeToEvents(this.handleEvent.bind(this))
 
     this.solve = null
   }
@@ -148,6 +172,7 @@ export class TrainingManager {
       const randScramble = await this.practiceEventHandler.generateScramble()
       this.solve = new SolveData(randScramble.toString())
       this.scrambleHandler.setScramble(new Alg(randScramble))
+      this.practiceEventHandler.cubeSolvingStateEventManager.reset()
     }
   }
 
@@ -185,7 +210,7 @@ export class TrainingManager {
    * @param {{inputs: {cubeTimeStamp: number, move: string}[], facelet: string}} x 
    */
   processCubeMove(x) {
-    const { inputs, facelet } = x
+    const { inputs } = x
     const inputMoveStr = inputs
       .sort((a, b) => a.cubeTimeStamp - b.cubeTimeStamp)
       .map(m => m.move.trim().toUpperCase())
