@@ -8,11 +8,14 @@ export class SolveData {
      * @param {string} scramble
      */
     constructor(scramble) {
-        this.scramble = scramble;   // The scramble string used for the solve
-        this.moves = [];            // Array of { move: string, timestamp: number }
-        this.checkpoints = [];      // Array of checkpoint timestamps (in ms from start)
-        this.startTime = 0;      // Solve start time (to be set when started)
-        this.endTime = 0;        // Solve end time (to be set when solved)
+        this.scramble = scramble; // The scramble string used for the solve
+        /**
+         * @type {Array<{ move: string, timestamp: number }>}
+         */
+        this.moves = []; // Array of { move: string, timestamp: number }
+        this.checkpoints = []; // Array of checkpoint timestamps (in ms from start)
+        this.startTime = 0; // Solve start time (to be set when started)
+        this.endTime = 0; // Solve end time (to be set when solved)
     }
 
     /**
@@ -36,10 +39,10 @@ export class SolveData {
      */
     convertTimestampsToRelative() {
         if (!this.startTime) return;
-        return this.moves.map(m => ({
+        return this.moves.map((m) => ({
             move: m.move,
             // @ts-ignore
-            timestamp: m.timestamp - this.startTime
+            timestamp: m.timestamp - this.startTime,
         }));
     }
 }
@@ -53,18 +56,17 @@ export class SolveDataTable {
         this.container = container;
         this.storage = new SolveDataStorage();
         this.solves = this.storage.loadSolves();
-        this.viewMode = 'time';
+        this.viewMode = "time";
         this.render();
     }
 
     /**
-    * Toggle the view mode and re-render.
-    */
+     * Toggle the view mode and re-render.
+     */
     toggleView() {
-        this.viewMode = this.viewMode === 'time' ? 'moves' : 'time';
+        this.viewMode = this.viewMode === "time" ? "moves" : "time";
         this.render();
     }
-
 
     /**
      * @param {any} solveData
@@ -77,10 +79,11 @@ export class SolveDataTable {
 
     render() {
         // Determine the toggle button's icon and text based on the view mode.
-        const toggleButtonIcon = this.viewMode === 'time' ? '✋' : '⏱️';
-        const toggleButtonText = this.viewMode === 'time' ? 'Switch to Moves View' : 'Switch to Time View';
+        const toggleButtonIcon = this.viewMode === "time" ? "✋" : "⏱️";
+        const toggleButtonText =
+            this.viewMode === "time" ? "Switch to Moves View" : "Switch to Time View";
 
-        let html = /*html*/`
+        let html = /*html*/ `
     <div class="history-table">
       <div style="
         display: flex;
@@ -112,7 +115,7 @@ export class SolveDataTable {
         <tbody>
   `;
 
-        this.solves.reverse().forEach(s => {
+        this.solves.reverse().forEach((s) => {
             // We expect 7 checkpoints: [cross, f2l1, f2l2, f2l3, f2l4, oll, pll]
             const checkpoints = s.checkpoints || [];
             if (checkpoints.length < 7 || !s.startTime || !s.endTime) return;
@@ -131,32 +134,80 @@ export class SolveDataTable {
 
             // Count moves in each phase.
             const crossMoves = countMovesBetween(relativeMoves, 0, checkpoints[0]);
-            const f2l1Moves = countMovesBetween(relativeMoves, checkpoints[0], checkpoints[1]);
-            const f2l2Moves = countMovesBetween(relativeMoves, checkpoints[1], checkpoints[2]);
-            const f2l3Moves = countMovesBetween(relativeMoves, checkpoints[2], checkpoints[3]);
-            const f2l4Moves = countMovesBetween(relativeMoves, checkpoints[3], checkpoints[4]);
-            const ollMoves = countMovesBetween(relativeMoves, checkpoints[4], checkpoints[5]);
-            const pllMoves = countMovesBetween(relativeMoves, checkpoints[5], checkpoints[6]);
+            const f2l1Moves = countMovesBetween(
+                relativeMoves,
+                checkpoints[0],
+                checkpoints[1]
+            );
+            const f2l2Moves = countMovesBetween(
+                relativeMoves,
+                checkpoints[1],
+                checkpoints[2]
+            );
+            const f2l3Moves = countMovesBetween(
+                relativeMoves,
+                checkpoints[2],
+                checkpoints[3]
+            );
+            const f2l4Moves = countMovesBetween(
+                relativeMoves,
+                checkpoints[3],
+                checkpoints[4]
+            );
+            const ollMoves = countMovesBetween(
+                relativeMoves,
+                checkpoints[4],
+                checkpoints[5]
+            );
+            const pllMoves = countMovesBetween(
+                relativeMoves,
+                checkpoints[5],
+                checkpoints[6]
+            );
 
             // Total time (in seconds) from solve start to end.
             const totalTime = ((s.endTime - s.startTime) / 1000).toFixed(2);
 
             // Helper function: returns cell content based on current view mode.
             const cell = (time, moves) => {
-                return this.viewMode === 'time' ? `${time.toFixed(2)} s` : `${moves}`;
+                return this.viewMode === "time" ? `${time.toFixed(2)} s` : `${moves}`;
             };
 
             html += `
       <tr class="solve-row">
-        <td style="text-align: center; padding: 12px;">${cell(crossTime, crossMoves)}</td>
-        <td style="text-align: center; padding: 12px;">${cell(f2l1, f2l1Moves)}</td>
-        <td style="text-align: center; padding: 12px;">${cell(f2l2, f2l2Moves)}</td>
-        <td style="text-align: center; padding: 12px;">${cell(f2l3, f2l3Moves)}</td>
-        <td style="text-align: center; padding: 12px;">${cell(f2l4, f2l4Moves)}</td>
-        <td style="text-align: center; padding: 12px;">${cell(oll, ollMoves)}</td>
-        <td style="text-align: center; padding: 12px;">${cell(pll, pllMoves)}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                crossTime,
+                crossMoves
+            )}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                f2l1,
+                f2l1Moves
+            )}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                f2l2,
+                f2l2Moves
+            )}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                f2l3,
+                f2l3Moves
+            )}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                f2l4,
+                f2l4Moves
+            )}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                oll,
+                ollMoves
+            )}</td>
+        <td style="text-align: center; padding: 12px;">${cell(
+                pll,
+                pllMoves
+            )}</td>
         <td style="text-align: center; padding: 12px;">
-          ${this.viewMode === 'time' ? `${totalTime} s` : `${s.moves.length} moves`}
+          ${this.viewMode === "time"
+                    ? `${totalTime} s`
+                    : `${s.moves.length} moves`
+                }
         </td>
       </tr>
     `;
@@ -179,13 +230,13 @@ export class SolveDataTable {
             toggleButton.addEventListener("click", () => this.toggleView());
         }
     }
-
 }
 
 const countMovesBetween = (moves, startSec, endSec) => {
-    return moves.filter(m => (m.timestamp / 1000) >= startSec && (m.timestamp / 1000) < endSec).length;
+    return moves.filter(
+        (m) => m.timestamp / 1000 >= startSec && m.timestamp / 1000 < endSec
+    ).length;
 };
-
 
 class SolveDataStorage {
     prefixKey = "V1";
@@ -211,7 +262,7 @@ class SolveDataStorage {
             try {
                 // return JSON.parse(savedSolves);
                 const jsonParsed = JSON.parse(savedSolves);
-                return jsonParsed.map(s => {
+                return jsonParsed.map((s) => {
                     const solve = new SolveData(s.scramble);
                     solve.moves = s.moves;
                     solve.checkpoints = s.checkpoints;
