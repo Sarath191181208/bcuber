@@ -14,9 +14,9 @@ import {
 import { SolveDataTable } from "./utils/solveData.js";
 import { RecentSolveView } from "./components/recent-solve-view.js";
 import {
-  CFOPPracticeEventHandler,
   TrainingManager,
-} from "./TrainingManager.js";
+} from "./components/TrainingManager/TrainingManager.js";
+import { CFOPPracticeEventHandler } from "./components/TrainingManager/EventHandlers/CFOPTrainingHandler.js";
 
 const qiyiConnectButton = selectElement("#qiyi-connect-btn");
 const cubeRenderDiv = selectElement("#cube");
