@@ -14,9 +14,15 @@ import {
 import { SolveDataTable } from "./utils/solveData.js";
 import { RecentSolveView } from "./components/recent-solve-view.js";
 import {
-  TrainingManager,
-} from "./components/TrainingManager/TrainingManager.js";
+  F2LRecentSolveView,
+  RecentSolveView,
+} from "./components/recent-solve-view.js";
+import { TrainingManager } from "./components/TrainingManager/TrainingManager.js";
 import { CFOPPracticeEventHandler } from "./components/TrainingManager/EventHandlers/CFOPTrainingHandler.js";
+import { Alg } from "cubing/alg";
+import { F2L_ALGS } from "./F2L_ALGS.js";
+import { normalizeRotationsInMoves } from "./components/moveNormalizeRotation.js";
+import { F2LPracticeEventHandler } from "./components/TrainingManager/EventHandlers/F2LTrainingHandler.js";
 
 const qiyiConnectButton = selectElement("#qiyi-connect-btn");
 const cubeRenderDiv = selectElement("#cube");
@@ -33,6 +39,7 @@ const debugCubeContainer = document.querySelector("#debug-cube-container");
 
 const NUM_SEGMENTS = 1 + 4 + 1 + 1;
 const timer = new CubeTimer(NUM_SEGMENTS, timerDisplay);
+const f2lTimer = new CubeTimer(1, timerDisplay);
 const scrambleHandler = new ScrambleHandler(scrambleDisplay);
 const historyHandler = new SolveDataTable(historyTableContainer);
 
@@ -41,7 +48,12 @@ const recentSolvedViewHandler = new RecentSolveView(
   recentSolvedStatsView,
   historyHandler.solves[0]
 );
+const f2LRecentSolveView = new F2LRecentSolveView(
+  recentSolvedStatsView,
+  historyHandler.solves[0]
+);
 recentSolvedViewHandler.render();
+f2LRecentSolveView.render(F2L_ALGS[0].moves);
 
 let turnInspectionOnAutomatically = false;
 
@@ -54,6 +66,44 @@ const generateScramble = async () => {
   const x = await randomScrambleForEvent("333");
   return x.toString();
 };
+
+const generateF2LScramble = async () => {
+  const { algs, index } = getRandomALG();
+  const nrom = algs[0]
+    .replaceAll(")", " ")
+    .replaceAll("(", " ")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .split(" ");
+  const alg = normalizeRotationsInMoves(nrom);
+  console.log("RAND ALG: ", { alg, nrom });
+  const randScramble = new Alg(alg.join(" ").replaceAll(/\s+/g, " "))
+    .experimentalSimplify({
+      cancel: true,
+    })
+    .invert();
+  return { scramble: randScramble.toString(), index };
+};
+
+function getRandomALG() {
+  const randIdx = Math.floor(Math.random() * F2L_ALGS.length);
+  const randomALGList = F2L_ALGS[randIdx];
+  console.log({ randomALGList });
+  const filteredALGS = randomALGList.moves.filter((move) =>
+    ["M", "S", "E", "d", "u", "rw", "dw", "f"].every((el) => !move.includes(el))
+  );
+  console.log({ filteredALGS });
+  if (filteredALGS.length === 0) {
+    return getRandomALG();
+  }
+  return { algs: filteredALGS, index: randIdx };
+}
+
+const f2lPracticeHandler = new F2LPracticeEventHandler({
+  timer: f2lTimer,
+  generateScramble: generateF2LScramble,
+});
+
 const trainingManager = new TrainingManager({
   practiceEventHandler: new CFOPPracticeEventHandler({
     timer,
