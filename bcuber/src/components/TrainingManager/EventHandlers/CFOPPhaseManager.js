@@ -11,12 +11,14 @@ export class CubeSolvingPhaseEventManager {
    */
   constructor(onEvent) {
     this.currentPhase = CFOPCubeSolvingPhase.SCRAMBLED
+    this.crossColor = null
     this.lastF2LCount = 0
     this.onEvent = onEvent
   }
 
   reset() {
     this.currentPhase = CFOPCubeSolvingPhase.SCRAMBLED
+    this.crossColor = null
     this.lastF2LCount = 0
   }
 
@@ -37,11 +39,12 @@ export class CubeSolvingPhaseEventManager {
     }
 
     // Check if the cross is solved.
-    const crossColor = getCrossSolvedColor(facelet)
+    const tmpCrossColor = getCrossSolvedColor(facelet)
     if (this.currentPhase === CFOPCubeSolvingPhase.SCRAMBLED) {
-      if (crossColor) {
+      if (tmpCrossColor) {
+        this.crossColor = tmpCrossColor
         this.currentPhase = CFOPCubeSolvingPhase.CROSS_SOLVED
-        this.onEvent({ name: CFOPCubeSolvingPhase.CROSS_SOLVED, data: { color: crossColor } })
+        this.onEvent({ name: CFOPCubeSolvingPhase.CROSS_SOLVED, data: { color: tmpCrossColor } })
       }
     }
 
@@ -51,7 +54,7 @@ export class CubeSolvingPhaseEventManager {
       this.currentPhase === CFOPCubeSolvingPhase.CROSS_SOLVED ||
       this.currentPhase === CFOPCubeSolvingPhase.F2L_PROGRESS
     ) {
-      const f2lStatus = getF2LPairsSolved(facelet, crossColor)
+      const f2lStatus = getF2LPairsSolved(facelet, this.crossColor)
       const newPairEvent = this.getF2LPairEvent(f2lStatus)
       if (newPairEvent) {
         this.onEvent({ name: CFOPCubeSolvingPhase.F2L_PROGRESS, data: { count: newPairEvent, f2lSlots: f2lStatus } })
@@ -64,7 +67,7 @@ export class CubeSolvingPhaseEventManager {
 
     // Check OLL.
     if (this.currentPhase === CFOPCubeSolvingPhase.OLL) {
-      const ollSolved = getOLLSolved(facelet, crossColor)
+      const ollSolved = getOLLSolved(facelet, this.crossColor)
       if (ollSolved) {
         this.currentPhase = CFOPCubeSolvingPhase.PLL
         this.onEvent({ name: CFOPCubeSolvingPhase.OLL, data: null })
