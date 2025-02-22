@@ -9,7 +9,7 @@ import { SolveData } from "../utils/solveData";
  */
 const countMovesBetween = (moves, startSec, endSec) => {
   return moves.filter(
-    m => (m.timestamp / 1000) >= startSec && (m.timestamp / 1000) < endSec
+    (m) => m.timestamp / 1000 >= startSec && m.timestamp / 1000 < endSec
   ).length;
 };
 
@@ -24,7 +24,7 @@ const countMovesBetween = (moves, startSec, endSec) => {
  *   [Cross, F1, F2, F3, F4, OLL, PLL]
  *   where:
  *     • Cross: from 0 to cps[0]
- *     • F2L: from cps[0] to cps[4] 
+ *     • F2L: from cps[0] to cps[4]
  *         (F1 = cps[1]-cps[0], F2 = cps[2]-cps[1], F3 = cps[3]-cps[2], F4 = cps[4]-cps[3])
  * - s.startTime and s.endTime are in milliseconds.
  * - s.moves is an array of move objects with timestamps in milliseconds.
@@ -52,7 +52,12 @@ export class RecentSolveView {
     }
 
     // Validate required data.
-    if (!s.startTime || !s.endTime || !s.checkpoints || s.checkpoints.length < 7) {
+    if (
+      !s.startTime ||
+      !s.endTime ||
+      !s.checkpoints ||
+      s.checkpoints.length < 7
+    ) {
       this.container.innerHTML = `<p style="color: #ccc;">No valid solve data available.</p>`;
       return;
     }
@@ -94,7 +99,8 @@ export class RecentSolveView {
     // Overall F2L stats: from cps[0] to cps[4]
     const overallF2LTime = cps[4] - cps[0];
     const overallF2LMoves = countMovesBetween(relativeMoves, cps[0], cps[4]);
-    const overallF2LTPS = overallF2LTime > 0 ? overallF2LMoves / overallF2LTime : 0;
+    const overallF2LTPS =
+      overallF2LTime > 0 ? overallF2LMoves / overallF2LTime : 0;
 
     // OLL: from cps[4] to cps[5]
     const ollTime = cps[5] - cps[4];
@@ -119,37 +125,30 @@ export class RecentSolveView {
         <h2 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; text-align: center;">
           Recent Solve
         </h2>
-        <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
-          <div style="text-align: center;">
-            <h3 style="margin: 0; font-size: 1.1rem;">Time</h3>
-            <p style="margin: 0;">${totalTimeSec.toFixed(2)} s</p>
-          </div>
-          <div style="text-align: center;">
-            <h3 style="margin: 0; font-size: 1.1rem;">Moves</h3>
-            <p style="margin: 0;">${totalMoves}</p>
-          </div>
-          <div style="text-align: center;">
-            <h3 style="margin: 0; font-size: 1.1rem;">TPS</h3>
-            <p style="margin: 0;">${overallTPS.toFixed(2)}</p>
-          </div>
-        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        ${renderStats({ totalTimeSec, totalMoves, overallTPS })}
         <div>
           <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">Stage Breakdown</h3>
           <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;">
-            ${this._renderBigStageBox('Cross', crossTime, crossMoves, crossTPS)}
+            ${this._renderBigStageBox("Cross", crossTime, crossMoves, crossTPS)}
             <div style="flex: 1 1 300px;">
               <div style="display: flex; gap: 10px; justify-content: space-around; flex-wrap: nowrap;">
-                ${this._renderSmallStageBox('F1', f1Time, f1Moves, f1TPS)}
-                ${this._renderSmallStageBox('F2', f2Time, f2Moves, f2TPS)}
-                ${this._renderSmallStageBox('F3', f3Time, f3Moves, f3TPS)}
-                ${this._renderSmallStageBox('F4', f4Time, f4Moves, f4TPS)}
+                ${this._renderSmallStageBox("F1", f1Time, f1Moves, f1TPS)}
+                ${this._renderSmallStageBox("F2", f2Time, f2Moves, f2TPS)}
+                ${this._renderSmallStageBox("F3", f3Time, f3Moves, f3TPS)}
+                ${this._renderSmallStageBox("F4", f4Time, f4Moves, f4TPS)}
               </div>
               <div style="margin-top: 10px;">
-                ${this._renderBigStageBox('F2L Overall', overallF2LTime, overallF2LMoves, overallF2LTPS)}
+                ${this._renderBigStageBox(
+      "F2L Overall",
+      overallF2LTime,
+      overallF2LMoves,
+      overallF2LTPS
+    )}
               </div>
             </div>
-            ${this._renderBigStageBox('OLL', ollTime, ollMoves, ollTPS)}
-            ${this._renderBigStageBox('PLL', pllTime, pllMoves, pllTPS)}
+            ${this._renderBigStageBox("OLL", ollTime, ollMoves, ollTPS)}
+            ${this._renderBigStageBox("PLL", pllTime, pllMoves, pllTPS)}
           </div>
         </div>
       </div>
@@ -227,4 +226,128 @@ export class RecentSolveView {
       </div>
     `;
   }
+}
+
+/**
+ *
+ * @param {Object} arg0
+ * @param {number} arg0.totalTimeSec
+ * @param {number} arg0.totalMoves
+ * @param {number} arg0.overallTPS
+ * @returns
+ */
+function renderStats({ totalTimeSec, totalMoves, overallTPS }) {
+  return /*html*/ `<div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Time</h3>
+            <p style="margin: 0;">${totalTimeSec.toFixed(2)} s</p>
+          </div>
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Moves</h3>
+            <p style="margin: 0;">${totalMoves}</p>
+          </div>
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">TPS</h3>
+            <p style="margin: 0;">${overallTPS.toFixed(2)}</p>
+          </div>
+        </div>`;
+}
+
+export class F2LRecentSolveView {
+  /**
+   * @param {HTMLElement} container - The container element where the view will be rendered.
+   * @param {SolveData} solveData - The solve data object.
+   */
+  constructor(container, solveData) {
+    this.container = container;
+    this.solveData = solveData;
+  }
+
+  /**
+   * @param {string[]} F2LAlgs
+   */
+  render(F2LAlgs) {
+    const s = this.solveData;
+    if (s === undefined) {
+      return;
+    }
+    // Overall metrics. there is only one total time for the solve.
+    const totalTimeSec = (s.endTime - s.startTime) / 1000;
+    const totalMoves = s.moves.length;
+    const totalTPS = totalTimeSec > 0 ? totalMoves / totalTimeSec : 0;
+
+    // Render moves in a single line with hover tooltip showing the time since the previous move.
+    const movesHTML = s.moves
+      .map((move, index) => {
+        // For the first move, use s.startTime as the previous timestamp.
+        const prevTimestamp = index === 0 ? s.startTime : s.moves[index - 1].timestamp;
+        const diffSec = ((move.timestamp - prevTimestamp) / 1000).toFixed(2);
+        return `<span 
+                title="Took ${diffSec} s" 
+                style="
+                  background-color: #282828; 
+                  padding: 5px 8px; 
+                  border-radius: 4px; 
+                  cursor: default;
+                  margin-right: 5px;
+                ">
+                  ${move.move}
+              </span>`;
+      })
+      .join(" ");
+
+    const html = /*html*/ `
+    <div style="
+        background-color: #1e1e1e;
+        color: #f0f0f0;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        max-width: 700px;
+        margin: auto;
+    ">
+      <h2 style="
+          margin-top: 0;
+          border-bottom: 1px solid #444;
+          padding-bottom: 10px;
+          text-align: center;
+      ">F2L Analysis</h2>
+      ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
+      <div style="border-top: 1px solid #444; padding-top: 10px;">
+        <h3 style="text-align: center; margin-bottom: 10px;">F2L Algorithms</h3>
+        <ul style="
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        ">
+          ${F2LAlgs.map(
+      (alg) => `
+              <li style="
+                  background-color: #282828;
+                  padding: 30px 5px;
+                  margin: 5px 0;
+                  border-radius: 6px;
+                  text-align: center;
+              ">${alg}</li>
+            `
+    ).join("")}
+        </ul>
+      </div>
+      <div style="border-top: 1px solid #444; padding-top: 10px;">
+        <h3 style="text-align: center; margin-bottom: 10px;">Solution Moves</h3>
+        <div style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+        ">
+          ${movesHTML}
+        </div>
+      </div>
+    </div>
+  `;
+
+    this.container.innerHTML = html;
+  }
+
 }
