@@ -285,19 +285,26 @@ export class F2LRecentSolveView {
 
     // Render solution moves in a horizontal block above the timeline.
     const solutionMovesHTML = `
-      <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+      <div style="
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 20px;
+      ">
         ${relativeMoves
-        .map((move, index) => {
-          return `<span id="move-${index}" style="
-                        padding: 5px 8px;
-                        margin: 4px;
-                        border-radius: 4px;
-                        transition: background-color 0.2s;
-                      ">
-                        ${move.move} (${(move.timestamp / 1000).toFixed(2)} s)
+          .map((move, index) => {
+            return `<span id="move-${index}" style="
+                      padding: 8px 12px;
+                      margin: 6px;
+                      border-radius: 6px;
+                      font-size: 1rem;
+                      transition: background-color 0.2s;
+                      background-color: transparent;
+                    ">
+                      ${move.move} (${(move.timestamp / 1000).toFixed(2)} s)
                     </span>`;
-        })
-        .join(" ")}
+          })
+          .join(" ")}
       </div>
     `;
 
@@ -305,30 +312,85 @@ export class F2LRecentSolveView {
     // Each dot is positioned based on the move's timestamp, and hovering it
     // will highlight the corresponding move above.
     const timelineHTML = `
-      <div style="position: relative; height: 50px; margin: 15px 0;">
-        <div style="position: absolute; top: 50%; left: 0; right: 0; border-top: 2px solid #ccc;"></div>
+      <div style="position: relative; height: 70px; margin: 20px 0;">
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          border-top: 2px solid #ccc;
+        "></div>
         ${relativeMoves
-        .map((move, index) => {
-          const leftPercent = ((move.timestamp / 1000) / totalTimeSec) * 100;
-          const diffSec =
-            index === 0
-              ? (move.timestamp / 1000).toFixed(2)
-              : ((move.timestamp - relativeMoves[index - 1].timestamp) / 1000).toFixed(2);
-          return `<div style="position: absolute; top: 50%; left: ${leftPercent}%; transform: translate(-50%, -50%);">
-                      <div style="
-                          width: 1rem;
-                          height: 1rem;
+          .map((move, index) => {
+            const leftPercent = ((move.timestamp / 1000) / totalTimeSec) * 100;
+            const diffSec =
+              index === 0
+                ? (move.timestamp / 1000).toFixed(2)
+                : ((move.timestamp - relativeMoves[index - 1].timestamp) / 1000).toFixed(2);
+            return `<div style="
+                        position: absolute;
+                        top: 50%;
+                        left: ${leftPercent}%;
+                        transform: translate(-50%, -50%);
+                      ">
+                        <div style="
+                          width: 14px;
+                          height: 14px;
                           background-color: #f0f0f0;
                           border-radius: 50%;
                           cursor: pointer;
+                          transition: background-color 0.2s;
                         "
-                        onmouseenter="document.getElementById('move-${index}').style.backgroundColor='#555';"
-                        onmouseleave="document.getElementById('move-${index}').style.backgroundColor='transparent';"
-                        title="${move.move} - ${diffSec}s">
-                      </div>
-                    </div>`;
-        })
-        .join("")}
+                          onmouseenter="document.getElementById('move-${index}').style.backgroundColor='#555';"
+                          onmouseleave="document.getElementById('move-${index}').style.backgroundColor='transparent';"
+                          title="${move.move} - ${diffSec}s">
+                        </div>
+                      </div>`;
+          })
+          .join("")}
+      </div>
+    `;
+
+    // Render scramble if available.
+    const scrambleHTML = s.scramble
+      ? `
+      <div style="
+        border-top: 2px solid #444;
+        margin-top: 20px;
+        padding-top: 15px;
+      ">
+        <h3 style="text-align: center; margin-bottom: 10px;">Scramble</h3>
+        <p style="
+          text-align: center;
+          font-family: monospace;
+          font-size: 1.1rem;
+        ">${s.scramble}</p>
+      </div>
+      `
+      : "";
+
+    // Render F2L algorithms.
+    const algorithmsHTML = `
+      <div style="
+        border-top: 1px solid #444;
+        margin-top: 20px;
+        padding-top: 15px;
+      ">
+        <h3 style="text-align: center; margin-bottom: 10px;">F2L Algorithms</h3>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${F2LAlgs.map(
+            (alg) => `
+                <li style="
+                    background-color: #282828;
+                    padding: 20px 15px;
+                    margin: 8px 0;
+                    border-radius: 6px;
+                    text-align: center;
+                    font-size: 1rem;
+                ">${alg}</li>
+              `
+          ).join("")}
+        </ul>
       </div>
     `;
 
@@ -336,39 +398,28 @@ export class F2LRecentSolveView {
       <div style="
           background-color: #1e1e1e;
           color: #f0f0f0;
-          padding: 20px;
+          padding: 30px;
           border-radius: 8px;
           font-family: Arial, sans-serif;
-          max-width: 700px;
+          max-width: 800px;
           margin: auto;
       ">
-        <h2 style="text-align: center; margin-bottom: 15px;">F2L Analysis</h2>
+        <h2 style="text-align: center; margin-bottom: 20px;">F2L Analysis</h2>
         ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
-        <div style="border-top: 2px solid #444; margin-top: 20px; padding-top: 15px;">
-          <h3 style="text-align: center; margin-bottom: 10px;">Solution Moves</h3>
+        ${scrambleHTML}
+        <div style="
+          border-top: 2px solid #444;
+          margin-top: 20px;
+          padding-top: 20px;
+        ">
+          <h3 style="text-align: center; margin-bottom: 15px;">Solution Moves</h3>
           ${solutionMovesHTML}
           ${timelineHTML}
         </div>
-        <div style="border-top: 1px solid #444; margin-top: 20px; padding-top: 15px;">
-          <h3 style="text-align: center; margin-bottom: 10px;">F2L Algorithms</h3>
-          <ul style="list-style: none; padding: 0; margin: 0;">
-            ${F2LAlgs.map(
-      (alg) => `
-                <li style="
-                    background-color: #282828;
-                    padding: 20px 10px;
-                    margin: 8px 0;
-                    border-radius: 6px;
-                    text-align: center;
-                ">${alg}</li>
-              `
-    ).join("")}
-          </ul>
-        </div>
+        ${algorithmsHTML}
       </div>
     `;
 
     this.container.innerHTML = html;
   }
 }
-
