@@ -9,17 +9,27 @@ export class F2LPracticeEventHandler {
     /**
      * @param {object} options
      * @param {CubeTimer} options.timer
-     * @param {() => Promise<string>} options.generateScramble - E.g. "333", "f2l", "cross", etc.
+     * @param {() => Promise<{scramble: string; index: number}>} options.generateScramble - E.g. "333", "f2l", "cross", etc.
      */
     constructor(options) {
         this.timer = options.timer
-        this.generateScramble = options.generateScramble
+        this.f2lIndex = 0;
+        this._generateScramble = options.generateScramble
         this.cubeSolvingStateEventManager = new CubeSolvingPhaseEventManager(this.handleEvent.bind(this))
 
         /**
          * @type {((arg0: import('./types.js').CubeEvent) => {})[]}
          */
         this._eventSubscribers = []
+    }
+
+    /*
+    * @returns Promise<string>
+    */
+    async generateScramble() {
+        const {scramble, index}  = await this._generateScramble()
+        this.f2lIndex = index;
+        return scramble;
     }
 
     /**
@@ -45,7 +55,7 @@ export class F2LPracticeEventHandler {
      * @param {import('./types.js').CubeEvent} event 
      */
     handleEvent(event) {
-        if (event.name == CFOPCubeSolvingPhase.F2l_COMPLETE) {
+        if (event.name == CFOPCubeSolvingPhase.F2l_COMPLETE || event.name == CFOPCubeSolvingPhase.SOLVED) {
             this.timer.saveCheckpoint()
             for (let subscriber of this._eventSubscribers) {
                 subscriber({
@@ -68,6 +78,7 @@ export class F2LPracticeEventHandler {
     }
 
     reset() {
+        this.f2lIndex = 0;
         this.cubeSolvingStateEventManager.reset()
         this.timer.resetTimer()
     }
