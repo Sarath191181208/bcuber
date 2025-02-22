@@ -28,7 +28,6 @@ export const F2L_ALGS = [
     { moves: ["(R U R')"] },
     { moves: ["y (L' U' L)"] },
     { moves: ["U' (R U R') U (R U R')", "U2 (R U' R') U' (R U R')", "R' U R2 U R'"] },
-    { moves: ["U' (R U R') U (R U R')", "U2 (R U' R') U' (R U R')", "R' U R2 U R'"] },
     {
         moves: [
             "R' U2 R2 U R2' U R",
