@@ -273,87 +273,102 @@ export class F2LRecentSolveView {
     }
 
     const relativeMoves = s.convertTimestampsToRelative();
-    if (!relativeMoves) {
+    if (!relativeMoves || relativeMoves.length === 0) {
       this.container.innerHTML = `<p style="color: #ccc;">No valid solve data available.</p>`;
       return;
     }
 
-    // Overall metrics. there is only one total time for the solve.
+    // Overall metrics. There is only one total time for the solve.
     const totalTimeSec = (s.endTime - s.startTime) / 1000;
     const totalMoves = s.moves.length;
     const totalTPS = totalTimeSec > 0 ? totalMoves / totalTimeSec : 0;
 
-    // Build timeline HTML: a horizontal line with a dot for every move.
-    // The first dot is placed at 0% and the last at 100%.
-    const timelineHTML = `
-    <div style="position: relative; height: 30px; margin-top: 10px;">
-      <div style="position: absolute; top: 50%; left: 0; right: 0; border-top: 2px solid #ccc;"></div>
-      ${relativeMoves
+    // Render solution moves in a horizontal block above the timeline.
+    const solutionMovesHTML = `
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+        ${relativeMoves
         .map((move, index) => {
-          const leftPercentByTime = (move.timestamp / 1000) / totalTimeSec * 100;
-          const diffToPrevTime = index === 0 ? 0 : (move.timestamp - relativeMoves[index - 1].timestamp) / 1000;
-          return `<div style="
-                    position: absolute;
-                    top: 50%;
-                    left: ${leftPercentByTime}%;
-                    transform: translate(-50%, -50%);
-                    width: 10px;
-                    height: 10px;
-                    background-color: #f0f0f0;
-                    border-radius: 50%;
-                    cursor: pointer;
-                  " title="${move.move} - ${diffToPrevTime.toFixed(2)} s"></div>`;
+          return `<span id="move-${index}" style="
+                        padding: 5px 8px;
+                        margin: 4px;
+                        border-radius: 4px;
+                        transition: background-color 0.2s;
+                      ">
+                        ${move.move} (${(move.timestamp / 1000).toFixed(2)} s)
+                    </span>`;
+        })
+        .join(" ")}
+      </div>
+    `;
+
+    // Build timeline HTML: a horizontal line with a dot for every move.
+    // Each dot is positioned based on the move's timestamp, and hovering it
+    // will highlight the corresponding move above.
+    const timelineHTML = `
+      <div style="position: relative; height: 50px; margin: 15px 0;">
+        <div style="position: absolute; top: 50%; left: 0; right: 0; border-top: 2px solid #ccc;"></div>
+        ${relativeMoves
+        .map((move, index) => {
+          const leftPercent = ((move.timestamp / 1000) / totalTimeSec) * 100;
+          const diffSec =
+            index === 0
+              ? (move.timestamp / 1000).toFixed(2)
+              : ((move.timestamp - relativeMoves[index - 1].timestamp) / 1000).toFixed(2);
+          return `<div style="position: absolute; top: 50%; left: ${leftPercent}%; transform: translate(-50%, -50%);">
+                      <div style="
+                          width: 1rem;
+                          height: 1rem;
+                          background-color: #f0f0f0;
+                          border-radius: 50%;
+                          cursor: pointer;
+                        "
+                        onmouseenter="document.getElementById('move-${index}').style.backgroundColor='#555';"
+                        onmouseleave="document.getElementById('move-${index}').style.backgroundColor='transparent';"
+                        title="${move.move} - ${diffSec}s">
+                      </div>
+                    </div>`;
         })
         .join("")}
-    </div>
-  `;
+      </div>
+    `;
 
     const html = /*html*/ `
-    <div style="
-        background-color: #1e1e1e;
-        color: #f0f0f0;
-        padding: 20px;
-        border-radius: 8px;
-        font-family: Arial, sans-serif;
-        max-width: 700px;
-        margin: auto;
-    ">
-      <h2 style="
-          margin-top: 0;
-          border-bottom: 1px solid #444;
-          padding-bottom: 10px;
-          text-align: center;
-      ">F2L Analysis</h2>
-      ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
-      <div style="border-top: 1px solid #444; padding-top: 10px;">
-        <h3 style="text-align: center; margin-bottom: 10px;">F2L Algorithms</h3>
-        <ul style="
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        ">
-          ${F2LAlgs.map(
+      <div style="
+          background-color: #1e1e1e;
+          color: #f0f0f0;
+          padding: 20px;
+          border-radius: 8px;
+          font-family: Arial, sans-serif;
+          max-width: 700px;
+          margin: auto;
+      ">
+        <h2 style="text-align: center; margin-bottom: 15px;">F2L Analysis</h2>
+        ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
+        <div style="border-top: 2px solid #444; margin-top: 20px; padding-top: 15px;">
+          <h3 style="text-align: center; margin-bottom: 10px;">Solution Moves</h3>
+          ${solutionMovesHTML}
+          ${timelineHTML}
+        </div>
+        <div style="border-top: 1px solid #444; margin-top: 20px; padding-top: 15px;">
+          <h3 style="text-align: center; margin-bottom: 10px;">F2L Algorithms</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            ${F2LAlgs.map(
       (alg) => `
-              <li style="
-                  background-color: #282828;
-                  padding: 30px 5px;
-                  margin: 5px 0;
-                  border-radius: 6px;
-                  text-align: center;
-              ">${alg}</li>
-            `
+                <li style="
+                    background-color: #282828;
+                    padding: 20px 10px;
+                    margin: 8px 0;
+                    border-radius: 6px;
+                    text-align: center;
+                ">${alg}</li>
+              `
     ).join("")}
-        </ul>
+          </ul>
+        </div>
       </div>
-      <div style="border-top: 1px solid #444; padding-top: 10px;">
-        <h3 style="text-align: center; margin-bottom: 10px;">Solution Moves Timeline</h3>
-        ${timelineHTML}
-      </div>
-    </div>
-  `;
+    `;
 
     this.container.innerHTML = html;
   }
-
-
 }
+
