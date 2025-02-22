@@ -271,30 +271,42 @@ export class F2LRecentSolveView {
     if (s === undefined) {
       return;
     }
+
+    const relativeMoves = s.convertTimestampsToRelative();
+    if (!relativeMoves) {
+      this.container.innerHTML = `<p style="color: #ccc;">No valid solve data available.</p>`;
+      return;
+    }
+
     // Overall metrics. there is only one total time for the solve.
     const totalTimeSec = (s.endTime - s.startTime) / 1000;
     const totalMoves = s.moves.length;
     const totalTPS = totalTimeSec > 0 ? totalMoves / totalTimeSec : 0;
 
-    // Render moves in a single line with hover tooltip showing the time since the previous move.
-    const movesHTML = s.moves
-      .map((move, index) => {
-        // For the first move, use s.startTime as the previous timestamp.
-        const prevTimestamp = index === 0 ? s.startTime : s.moves[index - 1].timestamp;
-        const diffSec = ((move.timestamp - prevTimestamp) / 1000).toFixed(2);
-        return `<span 
-                title="Took ${diffSec} s" 
-                style="
-                  background-color: #282828; 
-                  padding: 5px 8px; 
-                  border-radius: 4px; 
-                  cursor: default;
-                  margin-right: 5px;
-                ">
-                  ${move.move}
-              </span>`;
-      })
-      .join(" ");
+    // Build timeline HTML: a horizontal line with a dot for every move.
+    // The first dot is placed at 0% and the last at 100%.
+    const timelineHTML = `
+    <div style="position: relative; height: 30px; margin-top: 10px;">
+      <div style="position: absolute; top: 50%; left: 0; right: 0; border-top: 2px solid #ccc;"></div>
+      ${relativeMoves
+        .map((move, index) => {
+          const leftPercentByTime = (move.timestamp / 1000) / totalTimeSec * 100;
+          const diffToPrevTime = index === 0 ? 0 : (move.timestamp - relativeMoves[index - 1].timestamp) / 1000;
+          return `<div style="
+                    position: absolute;
+                    top: 50%;
+                    left: ${leftPercentByTime}%;
+                    transform: translate(-50%, -50%);
+                    width: 10px;
+                    height: 10px;
+                    background-color: #f0f0f0;
+                    border-radius: 50%;
+                    cursor: pointer;
+                  " title="${move.move} - ${diffToPrevTime.toFixed(2)} s"></div>`;
+        })
+        .join("")}
+    </div>
+  `;
 
     const html = /*html*/ `
     <div style="
@@ -334,20 +346,14 @@ export class F2LRecentSolveView {
         </ul>
       </div>
       <div style="border-top: 1px solid #444; padding-top: 10px;">
-        <h3 style="text-align: center; margin-bottom: 10px;">Solution Moves</h3>
-        <div style="
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            justify-content: center;
-        ">
-          ${movesHTML}
-        </div>
+        <h3 style="text-align: center; margin-bottom: 10px;">Solution Moves Timeline</h3>
+        ${timelineHTML}
       </div>
     </div>
   `;
 
     this.container.innerHTML = html;
   }
+
 
 }
