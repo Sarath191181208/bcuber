@@ -12,7 +12,6 @@ import {
   BluetoothConnectingIcon,
 } from "./utils/icons.js";
 import { SolveDataTable } from "./utils/solveData.js";
-import { RecentSolveView } from "./components/recent-solve-view.js";
 import {
   F2LRecentSolveView,
   RecentSolveView,
@@ -109,11 +108,15 @@ const trainingManager = new TrainingManager({
     timer,
     generateScramble,
   }),
+  // practiceEventHandler: f2lPracticeHandler,
   scrambleHandler,
   onSolve: (solve) => {
     historyHandler.addSolve(solve);
     recentSolvedViewHandler.solveData = solve;
     recentSolvedViewHandler.render();
+    // f2LRecentSolveView.solveData = solve;
+    // f2LRecentSolveView.render(F2L_ALGS[f2lPracticeHandler.f2lIndex].moves);
+    // console.log("main.js [SOLVED:]", { solve });
   },
   autoScrambleOnSolve,
   turnInspectionOnAutomatically,
