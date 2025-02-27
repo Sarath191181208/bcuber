@@ -386,7 +386,7 @@ export const F2L_ALGS = [
     },
     {
         "moves": [
-            "yU L U' L2' U L"
+            "y U L U' L2' U L"
         ]
     },
     {
@@ -475,13 +475,13 @@ export const F2L_ALGS = [
         "moves": [
             "U (R U R') (L U L')",
             "U' (R U2 R') U' (L U L')",
-            "yU (L' U L) (R' U R)"
+            "y U (L' U L) (R' U R)"
         ]
     },
     {
         "moves": [
-            "yU' (L' U' L) (R' U' R)",
-            "yU (L' U2 L) U (R' U' R)",
+            "y U' (L' U' L) (R' U' R)",
+            "y U (L' U2 L) U (R' U' R)",
             "U' (R U' R') (L U' L')"
         ]
     },
