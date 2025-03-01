@@ -3,124 +3,22 @@ import "./style.css";
 import { RubiksCubeComponent } from "./components/render-cube.js";
 import { QiYiCubeController } from "./components/qiyi/cubeController";
 import { QIYI_CONFIG } from "./components/qiyi/config";
-import { randomScrambleForEvent } from "cubing/scramble";
-import { CubeTimer } from "./components/cubeTimer.js";
-import { ScrambleHandler } from "./utils/scrambleHandler.js";
-import { selectElement } from "./utils/domUtils.js";
 import {
-  BluetoothConnectedIcon,
-  BluetoothConnectingIcon,
-} from "./utils/icons.js";
-import { SolveDataTable } from "./utils/solveData.js";
+  getTrainingManager,
+  TrainingType,
+} from "./utils/getTrainingManager.js";
+import { views } from "./views.js";
 import {
-  F2LRecentSolveView,
-  RecentSolveView,
-} from "./components/recent-solve-view.js";
-import { TrainingManager } from "./components/TrainingManager/TrainingManager.js";
-import { CFOPPracticeEventHandler } from "./components/TrainingManager/EventHandlers/CFOPTrainingHandler.js";
-import { Alg } from "cubing/alg";
-import { F2L_ALGS } from "./F2L_ALGS.js";
-import { normalizeRotationsInMoves } from "./components/moveNormalizeRotation.js";
-import { F2LPracticeEventHandler } from "./components/TrainingManager/EventHandlers/F2LTrainingHandler.js";
-
-const qiyiConnectButton = selectElement("#qiyi-connect-btn");
-const cubeRenderDiv = selectElement("#cube");
-const toggleGizmosButton = selectElement("#toggle-gizmos-btn");
-const scrambleButton = selectElement("#scramble-button");
-const scrambleDisplay = selectElement("#scramble-display");
-const timerDisplay = selectElement("#timer-display");
-const recentSolvedStatsView = selectElement("#recent-solve-view");
-const autoTimerButton = selectElement("#auto-timer-btn");
-const autoScrambleOnSolveButton = selectElement("#auto-scramble-on-solve-btn");
-const historyTableContainer = selectElement("#solve-history-view");
-
-const debugCubeContainer = document.querySelector("#debug-cube-container");
-
-const NUM_SEGMENTS = 1 + 4 + 1 + 1;
-const timer = new CubeTimer(NUM_SEGMENTS, timerDisplay);
-const f2lTimer = new CubeTimer(1, timerDisplay);
-const scrambleHandler = new ScrambleHandler(scrambleDisplay);
-const historyHandler = new SolveDataTable(historyTableContainer);
-
-console.log({ solve: historyHandler.solves[0] });
-const recentSolvedViewHandler = new RecentSolveView(
-  recentSolvedStatsView,
-  historyHandler.solves[0]
-);
-const f2LRecentSolveView = new F2LRecentSolveView(
-  recentSolvedStatsView,
-  historyHandler.solves[0]
-);
-recentSolvedViewHandler.render();
-f2LRecentSolveView.render(F2L_ALGS[0].moves);
-
-let turnInspectionOnAutomatically = false;
-
-let autoScrambleOnSolve = false;
+  connectWithBluetooth,
+  setAutoScrambleOnSolve,
+  setAutoInspection,
+  setGizmos,
+} from "./actions.js";
+import { state } from "./state.js";
 
 // Create the cube and controller instances
-const cube = new RubiksCubeComponent(cubeRenderDiv);
-
-const generateScramble = async () => {
-  const x = await randomScrambleForEvent("333");
-  return x.toString();
-};
-
-const generateF2LScramble = async () => {
-  const { algs, index } = getRandomALG();
-  const nrom = algs[0]
-    .replaceAll(")", " ")
-    .replaceAll("(", " ")
-    .replaceAll(/\s+/g, " ")
-    .trim()
-    .split(" ");
-  const alg = normalizeRotationsInMoves(nrom);
-  console.log("RAND ALG: ", { alg, nrom });
-  const randScramble = new Alg(alg.join(" ").replaceAll(/\s+/g, " "))
-    .experimentalSimplify({
-      cancel: true,
-    })
-    .invert();
-  return { scramble: randScramble.toString(), index };
-};
-
-function getRandomALG() {
-  const randIdx = Math.floor(Math.random() * F2L_ALGS.length);
-  const randomALGList = F2L_ALGS[randIdx];
-  console.log({ randomALGList });
-  const filteredALGS = randomALGList.moves.filter((move) =>
-    ["M", "S", "E", "d", "u", "rw", "dw", "f"].every((el) => !move.includes(el))
-  );
-  console.log({ filteredALGS });
-  if (filteredALGS.length === 0) {
-    return getRandomALG();
-  }
-  return { algs: filteredALGS, index: randIdx };
-}
-
-const f2lPracticeHandler = new F2LPracticeEventHandler({
-  timer: f2lTimer,
-  generateScramble: generateF2LScramble,
-});
-
-const trainingManager = new TrainingManager({
-  practiceEventHandler: new CFOPPracticeEventHandler({
-    timer,
-    generateScramble,
-  }),
-  // practiceEventHandler: f2lPracticeHandler,
-  scrambleHandler,
-  onSolve: (solve) => {
-    historyHandler.addSolve(solve);
-    recentSolvedViewHandler.solveData = solve;
-    recentSolvedViewHandler.render();
-    // f2LRecentSolveView.solveData = solve;
-    // f2LRecentSolveView.render(F2L_ALGS[f2lPracticeHandler.f2lIndex].moves);
-    // console.log("main.js [SOLVED:]", { solve });
-  },
-  autoScrambleOnSolve,
-  turnInspectionOnAutomatically,
-});
+const cube = new RubiksCubeComponent(views.cube);
+const trainingManager = getTrainingManager(TrainingType.CFOP, views);
 
 /**
  * Processes moves coming in from the cube.
@@ -145,80 +43,34 @@ const qiyiHandler = new QiYiCubeController(
   QIYI_CONFIG,
   onCubeMove,
   // @ts-expect-error Element and HTML are almost the same therefore it's not an issue
-  debugCubeContainer
+  views.debugCube
 );
 
-// Start with gizmos active
-let gizmosActive = false;
-cube.toggleGizmos(gizmosActive);
+setAutoInspection(trainingManager, state.turnInspectionOnAutomatically);
+setAutoScrambleOnSolve(trainingManager, state.autoScrambleOnSolve);
+cube.toggleGizmos(state.gizmosActive);
 
 // Connect QIYI Cube when the connect button is clicked
-qiyiConnectButton.addEventListener("click", async () => {
-  connectWithBluetooth();
-});
-
-// Toggle gizmos on/off and update the button's active class accordingly
-toggleGizmosButton.addEventListener("click", () => {
-  gizmosActive = !gizmosActive;
-  cube.toggleGizmos(gizmosActive);
-  toggleGizmosButton.classList.toggle("active", gizmosActive);
+views.buttons.qiyiConnect.addEventListener("click", async () => {
+  connectWithBluetooth(trainingManager, qiyiHandler);
 });
 
 // Scramble the cube when the scramble button is clicked
-scrambleButton.addEventListener("click", async () => {
+views.buttons.scramble.addEventListener("click", async () => {
   await trainingManager.scrambleCube();
 });
 
+// Toggle gizmos on/off and update the button's active class accordingly
+views.buttons.toggleGizmos.addEventListener("click", () => {
+  setGizmos(cube, !state.gizmosActive);
+});
+
 // Toggle the auto timer on/off and update the button's active class accordingly
-autoTimerButton.addEventListener("click", () => {
-  toggleAutoTimer();
+views.buttons.autoTimer.addEventListener("click", () => {
+  setAutoInspection(trainingManager, !state.turnInspectionOnAutomatically);
 });
 
 // Toggle the auto scramble on solve on/off and update the button's active class accordingly
-autoScrambleOnSolveButton.addEventListener("click", () => {
-  toggleAutoScrambleOnSolve();
+views.buttons.autoScrambleOnSolve.addEventListener("click", () => {
+  setAutoScrambleOnSolve(trainingManager, !state.autoScrambleOnSolve);
 });
-
-const connectWithBluetooth = async () => {
-  qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`;
-  const connected = await qiyiHandler.connectCube();
-  if (connected) {
-    qiyiConnectButton.innerHTML = /*html */ `<icon>${BluetoothConnectedIcon}</icon>`;
-    await trainingManager.scrambleCube();
-  } else {
-    qiyiConnectButton.innerHTML = /* html */ `<icon> ${BluetoothConnectingIcon} </icon>`;
-    qiyiConnectButton.style.border = "1px solid red";
-  }
-};
-
-// on b connect with bluetooth
-document.body.addEventListener("keydown", async (e) => {
-  if (e.key === "b") {
-    await connectWithBluetooth();
-  }
-});
-
-const toggleAutoTimer = async () => {
-  turnInspectionOnAutomatically = !turnInspectionOnAutomatically;
-  trainingManager.setTurnInspectionOnAutomatically(
-    turnInspectionOnAutomatically
-  );
-  if (turnInspectionOnAutomatically) {
-    autoTimerButton.classList.add("active");
-  } else {
-    autoTimerButton.classList.remove("active");
-  }
-};
-
-const toggleAutoScrambleOnSolve = () => {
-  autoScrambleOnSolve = !autoScrambleOnSolve;
-  trainingManager.setAutoScrambleOnSolve(autoScrambleOnSolve);
-  if (autoScrambleOnSolve) {
-    autoScrambleOnSolveButton.classList.add("active");
-  } else {
-    autoScrambleOnSolveButton.classList.remove("active");
-  }
-};
-
-toggleAutoTimer(); // this is to set the initial state of the button
-toggleAutoScrambleOnSolve(); // this is to set the initial state of the button
