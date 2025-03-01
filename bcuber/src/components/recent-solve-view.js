@@ -125,7 +125,7 @@ export class RecentSolveView {
         <h2 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; text-align: center;">
           Recent Solve
         </h2>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
         ${renderStats({ totalTimeSec, totalMoves, overallTPS })}
         <div>
           <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">Stage Breakdown</h3>
@@ -140,11 +140,11 @@ export class RecentSolveView {
               </div>
               <div style="margin-top: 10px;">
                 ${this._renderBigStageBox(
-      "F2L Overall",
-      overallF2LTime,
-      overallF2LMoves,
-      overallF2LTPS
-    )}
+                  "F2L Overall",
+                  overallF2LTime,
+                  overallF2LMoves,
+                  overallF2LTPS
+                )}
               </div>
             </div>
             ${this._renderBigStageBox("OLL", ollTime, ollMoves, ollTPS)}
@@ -237,7 +237,7 @@ export class RecentSolveView {
  * @returns
  */
 function renderStats({ totalTimeSec, totalMoves, overallTPS }) {
-  return /*html*/ `<div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+  return /*html*/ `
           <div style="text-align: center;">
             <h3 style="margin: 0; font-size: 1.1rem;">Time</h3>
             <p style="margin: 0;">${totalTimeSec.toFixed(2)} s</p>
@@ -250,7 +250,8 @@ function renderStats({ totalTimeSec, totalMoves, overallTPS }) {
             <h3 style="margin: 0; font-size: 1.1rem;">TPS</h3>
             <p style="margin: 0;">${overallTPS.toFixed(2)}</p>
           </div>
-        </div>`;
+        </div>
+        `;
 }
 
 export class F2LRecentSolveView {
@@ -322,11 +323,14 @@ export class F2LRecentSolveView {
         "></div>
         ${relativeMoves
           .map((move, index) => {
-            const leftPercent = ((move.timestamp / 1000) / totalTimeSec) * 100;
+            const leftPercent = (move.timestamp / 1000 / totalTimeSec) * 100;
             const diffSec =
               index === 0
                 ? (move.timestamp / 1000).toFixed(2)
-                : ((move.timestamp - relativeMoves[index - 1].timestamp) / 1000).toFixed(2);
+                : (
+                    (move.timestamp - relativeMoves[index - 1].timestamp) /
+                    1000
+                  ).toFixed(2);
             return `<div style="
                         position: absolute;
                         top: 50%;
@@ -405,7 +409,9 @@ export class F2LRecentSolveView {
           margin: auto;
       ">
         <h2 style="text-align: center; margin-bottom: 20px;">F2L Analysis</h2>
-        ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
+        <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+          ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
+        </div>
         ${scrambleHTML}
         <div style="
           border-top: 2px solid #444;
