@@ -20,6 +20,8 @@ export class QiYiCubeController {
         this.renderContainer = renderIn;
         this.notifyMoves = notifyMoves;
 
+        if(this.renderContainer)
+        drawFacelet("UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB", this.renderContainer);
     }
 
     async connectCube() {
