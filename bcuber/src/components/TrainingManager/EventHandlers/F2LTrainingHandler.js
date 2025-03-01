@@ -74,6 +74,7 @@ export class F2LPracticeEventHandler {
      */
     processCubeMove(x) {
         const { facelet } = x
+        this.cubeSolvingStateEventManager.crossColor = "D"
         this.cubeSolvingStateEventManager.update(facelet)
     }
 
