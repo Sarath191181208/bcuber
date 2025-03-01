@@ -83,7 +83,7 @@ export class RubiksCubeComponent {
         // Set mode and a moderate size.
         this.transformControls.setMode("rotate");
         this.scene.add(this.transformControls.getHelper());
-        this.gizmosEnabled = true;
+        this.gizmosEnabled = false;
 
         // Smooth snapping variables.
         this.snappingActive = false;
