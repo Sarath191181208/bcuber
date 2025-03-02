@@ -8,6 +8,7 @@ const scramble = selectElement("#scramble-display");
 const timer = selectElement("#timer-display");
 const recentSolved = selectElement("#recent-solve-view");
 const history = selectElement("#solve-history-view");
+const ollSelect = selectElement("#oll-options-container");
 
 const autoTimer = selectElement("#auto-timer-btn");
 const autoScrambleOnSolve = selectElement("#auto-scramble-on-solve-btn");
@@ -22,6 +23,7 @@ export const views = {
   recentSolved,
   scramble,
   cube,
+  ollSelect,
   debugCube,
 
   buttons: {

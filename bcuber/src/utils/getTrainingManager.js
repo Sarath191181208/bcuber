@@ -15,7 +15,7 @@ import { F2LPracticeEventHandler } from "../components/TrainingManager/EventHand
 import { OLLPracticeEventHandler } from "../components/TrainingManager/EventHandlers/OLLTrainingHanlder";
 import { OLL_ALGS } from "../algs/OLL_ALGS";
 import { generateNormalizedScramble } from "./moveUitls";
-
+import { SelectedOLLALGStore } from "./storage/ollSelected";
 
 /**
  * @enum {string}
@@ -88,7 +88,18 @@ export function getTrainingManager(type, views) {
     const timer = new CubeTimer(1, views.timer);
     const c = new OLLPracticeEventHandler({
       timer,
-      generateScramble: () => generateNormalizedScramble(OLL_ALGS),
+      generateScramble: () => {
+        const selectedOLLS = new SelectedOLLALGStore().loadSelectedOLLALGS();
+        if (Object.values(selectedOLLS).length <= 0) {
+          return generateNormalizedScramble(selectedOLLS);
+        }
+        const filteredALGS = OLL_ALGS.filter((alg, i) => {
+          if(alg.name in selectedOLLS) {
+            return true;
+          }
+        });
+        return generateNormalizedScramble(filteredALGS);
+      },
     });
     practiceEventHandler = c;
     const OLLRecentSolveView = new SinglePhaseRecentSolveView(

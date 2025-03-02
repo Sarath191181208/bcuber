@@ -113,14 +113,14 @@
     .custom-select {
       position: relative;
       width: 200px;
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       user-select: none;
     }
 
     .custom-select-selected {
       background-color: #1a1a1a;
       color: #ffffff;
-      padding: 8px 12px;
+      padding: 10px 12px;
       border-radius: 8px;
       cursor: pointer;
       position: relative;
@@ -163,6 +163,94 @@
     .custom-select-items div.active {
       background-color: #212121;
     }
+  </style>
+  <style>
+    /* OLL Modal Overlay */
+    .oll-modal {
+      display: none;
+      /* Hidden by default */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    #oll-select-btn {
+      font-size: 1.2rem;
+      padding: 12px 20px;
+    }
+
+    /* Modal Content */
+    .oll-modal-content {
+      background: #2e2e2e;
+      color: #e0e0e0;
+      padding: 20px;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* Close button with cross icon fixed at the top right */
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: #e0e0e0;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Grid container for OLL items */
+    #oll-options-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 200px);
+      gap: 2.5rem;
+      justify-content: center;
+      margin-top: 50px;
+      /* leave space for the close button and heading */
+    }
+
+    /* Individual OLL item styling */
+    .oll-option {
+      width: 200px;
+      height: 200px;
+      border: 1px solid #444;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 20px;
+      background: #3a3a3a;
+      color: #e0e0e0;
+      transition: background 0.2s;
+    }
+
+    .oll-option.selected {
+      border: 2px dotted red;
+    }
+
+    .oll-option:hover {
+      background-color: #555;
+    }
+
+    twisty-player {
+      width: 100%;
+      height: 100%;
+    }
+
   </style>
 </head>
 
@@ -238,6 +326,7 @@
       </div>
     </div>
 
+    <button id="oll-select-btn">Select OLL</button>
   </nav>
   <div class="grid-container">
     <!-- Controls Column (1 part) -->
@@ -279,6 +368,21 @@
       </div>
     </div>
   </div>
+
+  <!-- OLL Select Modal -->
+  <div id="oll-modal" class="oll-modal">
+    <div class="oll-modal-content">
+      <!-- Fixed Close Button with Cross Icon -->
+      <button id="close-oll-modal" class="close-btn">&times;</button>
+      <h2>Select an OLL</h2>
+      <!-- Grid container where OLL options will be rendered dynamically -->
+      <div id="oll-options-container"></div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.cubing.net/v0/js/cubing/twisty" type="module"></script>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const select = document.querySelector(".custom-select");
@@ -326,6 +430,36 @@
     });
 
   </script>
+
+  <script>
+    // Assume that the OLL data is provided as follows.
+    // For demonstration, we simulate 60 items.
+    const OLL_ALGS = [];
+    for (let i = 1; i <= 60; i++) {
+      OLL_ALGS.push({
+        id: "OLL" + i,
+        name: "OLL " + i,
+        alg: "Algorithm " + i
+      });
+    }
+
+    // Setup event listeners once the DOM is loaded
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // Open the modal when the button is clicked
+      document.getElementById("oll-select-btn").addEventListener("click", function () {
+        document.getElementById("oll-modal").style.display = "flex";
+      });
+
+      // Close the modal when the close button is clicked
+      document.getElementById("close-oll-modal").addEventListener("click", function () {
+        document.getElementById("oll-modal").style.display = "none";
+      });
+    });
+
+  </script>
+
+
   <script type="module" src="/src/main.js"></script>
 </body>
 
