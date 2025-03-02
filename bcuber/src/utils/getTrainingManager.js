@@ -1,5 +1,4 @@
-// const timer = new CubeTimer(NUM_SEGMENTS, timerDisplay);
-// const f2lTimer = new CubeTimer(1, timerDisplay);
+//@ts-check
 
 import { randomScrambleForEvent } from "cubing/scramble";
 import { CubeTimer } from "../components/cubeTimer";
@@ -12,7 +11,7 @@ import {
   RecentSolveView,
 } from "../components/recent-solve-view";
 import { normalizeRotationsInMoves } from "../components/moveNormalizeRotation";
-import { F2L_ALGS } from "../F2L_ALGS";
+import { F2L_ALGS } from "../algs/F2L_ALGS";
 import { Alg } from "cubing/alg";
 import { F2LPracticeEventHandler } from "../components/TrainingManager/EventHandlers/F2LTrainingHandler";
 
@@ -31,7 +30,9 @@ const generateF2LScramble = async () => {
       cancel: true,
     })
     .invert();
-  return { scramble: randScramble.toString(), index };
+  //   anything matching something like U2' or U2 will be replaced with U2
+  const scramble = randScramble.toString().replaceAll(/([UDFBRL])2'/g, "$12");
+  return { scramble, index };
 };
 
 function getRandomALG() {
@@ -87,6 +88,7 @@ export function getTrainingManager(type, views) {
 
   let practiceEventHandler;
   let onSolve;
+  let startTimerAutomatically = false;
 
   if (type == TrainingType.CFOP) {
     const NUM_SEGMENTS = 1 + 4 + 1 + 1;
@@ -126,6 +128,8 @@ export function getTrainingManager(type, views) {
       f2LRecentSolveView.solveData = solve;
       f2LRecentSolveView.render(F2L_ALGS[practiceEventHandler.f2lIndex].moves);
     };
+
+    startTimerAutomatically = true;
   }
 
   if (practiceEventHandler == undefined || onSolve == undefined) {
@@ -138,6 +142,7 @@ export function getTrainingManager(type, views) {
     onSolve: onSolve,
     autoScrambleOnSolve: true,
     turnInspectionOnAutomatically: true,
+    startTimerAutomatically: startTimerAutomatically,
   });
 }
 
