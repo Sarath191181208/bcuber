@@ -4,9 +4,8 @@ import { ScrambleHandler } from "../../utils/scrambleHandler.js";
 import { SolveData } from "../../utils/solveData.js";
 import { CubeState } from "../../types.js";
 import { Alg } from "cubing/alg";
-import { CFOPPracticeEventHandler } from "./EventHandlers/CFOPTrainingHandler.js";
 import { CFOPCubeSolvingPhase } from "./EventHandlers/types.js";
-import { F2LPracticeEventHandler } from "./EventHandlers/F2LTrainingHandler.js";
+import { AbstractPracticeEventHandler } from "./EventHandlers/AbstractTrainingHandler.js";
 
 /**
  * TrainingManager manages the state for a training session.
@@ -17,7 +16,7 @@ export class TrainingManager {
   /**
    * @param {object} options
    * @param {ScrambleHandler} options.scrambleHandler
-   * @param {CFOPPracticeEventHandler | F2LPracticeEventHandler} options.practiceEventHandler
+   * @param {AbstractPracticeEventHandler} options.practiceEventHandler
    * @param {(arg0: SolveData) => void} options.onSolve
    * @param {boolean?} [options.autoScrambleOnSolve]
    * @param {boolean?} [options.turnInspectionOnAutomatically]
