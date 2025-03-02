@@ -109,6 +109,60 @@
     .h-95 {
       height: 95vh;
     }
+
+    .custom-select {
+      position: relative;
+      width: 200px;
+      font-size: 1.4rem;
+      user-select: none;
+    }
+
+    .custom-select-selected {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    /* Custom arrow */
+    .custom-select-selected::after {
+      content: "";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-top-color: #ffffff;
+    }
+
+    .custom-select-items {
+      position: absolute;
+      background-color: #1a1a1a;
+      border-top: none;
+      margin-top: 8px;
+      width: 100%;
+      z-index: 99;
+      display: none;
+      border-radius: 4px;
+    }
+
+    .custom-select-items div {
+      padding: 8px 12px;
+      cursor: pointer;
+      color: #ffffff;
+    }
+
+    /* Hover effect */
+    .custom-select-items div:hover {
+      background-color: #212121;
+    }
+
+    /* Active (selected) state */
+    .custom-select-items div.active {
+      background-color: #212121;
+    }
   </style>
 </head>
 
@@ -174,6 +228,16 @@
         </svg>
       </icon>
     </button>
+
+    <div id="training-select" class="custom-select">
+      <div class="custom-select-selected">CFOP</div>
+      <div class="custom-select-items">
+        <div data-value="CFOP">CFOP</div>
+        <div data-value="F2L">F2L</div>
+        <div data-value="OLL">OLL</div>
+      </div>
+    </div>
+
   </nav>
   <div class="grid-container">
     <!-- Controls Column (1 part) -->
@@ -215,6 +279,53 @@
       </div>
     </div>
   </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const select = document.querySelector(".custom-select");
+      const selected = select.querySelector(".custom-select-selected");
+      const items = select.querySelector(".custom-select-items");
+      const options = items.querySelectorAll("div");
+
+      function updateSelect(val) {
+        console.log("[DORPDOWN:]", val)
+        const option = Array.from(options).find((opt) => opt.getAttribute("data-value") === val);
+        // Remove active class from all options
+        options.forEach((opt) => opt.classList.remove("active"));
+        selected.textContent = option.textContent;
+        items.style.display = "none";
+
+        // Add active class to selected option
+        option.classList.add("active");
+      }
+
+      // Listen for value-select event
+      select.addEventListener("value-select", function (e) {
+        updateSelect(e.detail);
+      });
+
+      // Toggle dropdown on click
+      selected.addEventListener("click", function (e) {
+        e.stopPropagation();
+        items.style.display = items.style.display === "block" ? "none" : "block";
+      });
+
+      // Option click handler
+      options.forEach(function (option) {
+        option.addEventListener("click", function () {
+          select.dispatchEvent(new CustomEvent("value-select", {
+            detail: this.getAttribute("data-value")
+          }));
+          console.log("Selected:", this.getAttribute("data-value"));
+        });
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", function () {
+        items.style.display = "none";
+      });
+    });
+
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 
