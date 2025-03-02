@@ -79,6 +79,7 @@ function getRandomALG(algs) {
 export const TrainingType = {
   CFOP: "CFOP",
   F2L: "F2L",
+  OLL: "OLL",
 };
 
 /**
@@ -134,6 +135,27 @@ export function getTrainingManager(type, views) {
     onSolve = (/** @type {SolveData} */ solve) => {
       f2LRecentSolveView.solveData = solve;
       f2LRecentSolveView.render(F2L_ALGS[practiceEventHandler.f2lIndex].moves);
+    };
+
+    startTimerAutomatically = true;
+  }
+
+  if (type == TrainingType.OLL) {
+    const timer = new CubeTimer(1, views.timer);
+    const c = new OLLPracticeEventHandler({
+      timer,
+      generateScramble: () => generateNormalizedScramble(OLL_ALGS),
+    });
+    practiceEventHandler = c;
+    const f2LRecentSolveView = new F2LRecentSolveView(
+      views.recentSolved,
+      historyHandler.solves[0]
+    );
+    f2LRecentSolveView.render(OLL_ALGS[0].moves);
+
+    onSolve = (/** @type {SolveData} */ solve) => {
+      f2LRecentSolveView.solveData = solve;
+      f2LRecentSolveView.render(OLL_ALGS[c.OLLIndex].moves);
     };
 
     startTimerAutomatically = true;
