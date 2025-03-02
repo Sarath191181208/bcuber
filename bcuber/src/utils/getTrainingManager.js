@@ -56,23 +56,6 @@ function getRandomALG(algs) {
   return { algs: filteredALGS, index: randIdx };
 }
 
-// const f2lPracticeHandler = new F2LPracticeEventHandler({
-//   timer: f2lTimer,
-//   generateScramble: generateF2LScramble,
-// });
-
-// const onSolve = (/** @type {import("./utils/solveData.js").SolveData} */ solve) => {
-//     historyHandler.addSolve(solve);
-//     recentSolvedViewHandler.solveData = solve;
-//     recentSolvedViewHandler.render();
-//     // f2LRecentSolveView.solveData = solve;
-//     // f2LRecentSolveView.render(F2L_ALGS[f2lPracticeHandler.f2lIndex].moves);
-//     // console.log("main.js [SOLVED:]", { solve });
-//   }
-
-// create a fn getTrainingManager that returns a new instance of TrainingManager
-// take an enum in
-
 /**
  * @enum {string}
  */
