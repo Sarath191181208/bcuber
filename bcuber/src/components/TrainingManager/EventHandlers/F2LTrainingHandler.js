@@ -1,26 +1,17 @@
 import { CubeTimer } from '../../cubeTimer.js'
-import { CubeSolvingPhaseEventManager } from './CFOPPhaseManager.js'
+import { AbstractPracticeEventHandler } from './AbstractTrainingHandler.js';
 import { CFOPCubeSolvingPhase } from './types.js'
 
-/**
- *
- */
-export class F2LPracticeEventHandler {
+export class F2LPracticeEventHandler extends AbstractPracticeEventHandler {
     /**
      * @param {object} options
      * @param {CubeTimer} options.timer
      * @param {() => Promise<{scramble: string; index: number}>} options.generateScramble - E.g. "333", "f2l", "cross", etc.
      */
     constructor(options) {
-        this.timer = options.timer
+        super(options);
         this.f2lIndex = 0;
         this._generateScramble = options.generateScramble
-        this.cubeSolvingStateEventManager = new CubeSolvingPhaseEventManager(this.handleEvent.bind(this))
-
-        /**
-         * @type {((arg0: import('./types.js').CubeEvent) => {})[]}
-         */
-        this._eventSubscribers = []
     }
 
     /*
@@ -30,24 +21,6 @@ export class F2LPracticeEventHandler {
         const {scramble, index}  = await this._generateScramble()
         this.f2lIndex = index;
         return scramble;
-    }
-
-    /**
-     * @param {((arg0: import('./types.js').CubeEvent) => {})} callback
-     */
-    subscribeToEvents(callback) {
-        this._eventSubscribers.push(callback)
-    }
-
-    /**
-     * @param {(arg0: import('./types.js').CubeEvent) => {}} callback
-     */
-    unsubscribeFromEvents(callback) {
-        this._eventSubscribers = this._eventSubscribers.filter(sub => sub !== callback)
-    }
-
-    handleSolvedEvent() {
-        this.timer.saveCheckpoint()
     }
 
     /**
@@ -73,14 +46,12 @@ export class F2LPracticeEventHandler {
      * @param {{inputs: {cubeTimeStamp: number, move: string}[], facelet: string}} x 
      */
     processCubeMove(x) {
-        const { facelet } = x
         this.cubeSolvingStateEventManager.crossColor = "D"
-        this.cubeSolvingStateEventManager.update(facelet)
+        super.processCubeMove(x)
     }
 
     reset() {
+        super.reset()
         this.f2lIndex = 0;
-        this.cubeSolvingStateEventManager.reset()
-        this.timer.resetTimer()
     }
 }
