@@ -8,6 +8,7 @@ export const CubeState = {
     INSPECTING: "INSPECTING",
     SOLVING: "SOLVING",
     LIVE: "LIVE",
+    WAITING: "WAITING",
     SOLVED: "SOLVED"
 }
 
