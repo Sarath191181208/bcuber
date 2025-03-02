@@ -12,6 +12,8 @@ const history = selectElement("#solve-history-view");
 const autoTimer = selectElement("#auto-timer-btn");
 const autoScrambleOnSolve = selectElement("#auto-scramble-on-solve-btn");
 
+const trainingSelect = selectElement("#training-select");
+
 const debugCube = document.querySelector("#debug-cube-container");
 
 export const views = {
@@ -28,5 +30,9 @@ export const views = {
     scramble: scrambleBtn,
     autoTimer,
     autoScrambleOnSolve,
+  },
+
+  dropdowns: {
+    trainingSelect,
   },
 };
