@@ -15,6 +15,7 @@ import {
   setGizmos,
 } from "./actions.js";
 import { state } from "./state.js";
+import { SelectOLLScreen } from "./components/oll-select.js";
 
 // Create the cube and controller instances
 const cube = new RubiksCubeComponent(views.cube);
@@ -23,6 +24,9 @@ let trainingManager = getTrainingManager(trainingType, views);
 document.addEventListener("DOMContentLoaded", function () {
     views.dropdowns.trainingSelect.dispatchEvent(new CustomEvent("value-select", { detail: trainingType }));
 });
+
+const ollSelect = new SelectOLLScreen(views.ollSelect);
+ollSelect.render()
 
 /**
  * Processes moves coming in from the cube.
