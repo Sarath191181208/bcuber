@@ -1,3 +1,4 @@
+import { Alg } from "cubing/alg";
 import { OLL_ALGS } from "../algs/OLL_ALGS";
 import { SelectedOLLALGStore } from "../utils/storage/ollSelected";
 
@@ -21,13 +22,16 @@ export class SelectOLLScreen {
         isSelected ? "selected" : ""
       }">
           <twisty-player 
-            alg="${alg.setup}" 
+            alg="${new Alg(alg.setup).invert()}" 
             experimental-setup-anchor="end" 
             experimental-stickering="OLL"
             visualization="experimental-2D-LL"
             background="none" 
             control-panel="none">
           </twisty-player>
+          ${alg.name}
+          ${alg.subgroup ? `<span class="subgroup">${alg.subgroup}</span>` : ""}
+          ${alg.setup}
         </div>
       `;
     }).join("");
