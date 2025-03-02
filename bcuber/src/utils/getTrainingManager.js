@@ -14,9 +14,11 @@ import { normalizeRotationsInMoves } from "../components/moveNormalizeRotation";
 import { F2L_ALGS } from "../algs/F2L_ALGS";
 import { Alg } from "cubing/alg";
 import { F2LPracticeEventHandler } from "../components/TrainingManager/EventHandlers/F2LTrainingHandler";
+import { OLLPracticeEventHandler } from "../components/TrainingManager/EventHandlers/OLLTrainingHanlder";
+import { OLL_ALGS } from "../algs/OLL_ALGS";
 
-const generateF2LScramble = async () => {
-  const { algs, index } = getRandomALG();
+const generateNormalizedScramble = async (allAlgs) => {
+  const { algs, index } = getRandomALG(allAlgs);
   const nrom = algs[0]
     .replaceAll(")", " ")
     .replaceAll("(", " ")
@@ -35,16 +37,21 @@ const generateF2LScramble = async () => {
   return { scramble, index };
 };
 
-function getRandomALG() {
-  const randIdx = Math.floor(Math.random() * F2L_ALGS.length);
-  const randomALGList = F2L_ALGS[randIdx];
+/**
+ * @param {Object[]} algs
+ * @param {string[]} algs[].moves
+ * @returns {{algs: string[], index: number}}
+ */
+function getRandomALG(algs) {
+  const randIdx = Math.floor(Math.random() * algs.length);
+  const randomALGList = algs[randIdx];
   console.log({ randomALGList });
   const filteredALGS = randomALGList.moves.filter((move) =>
     ["M", "S", "E", "d", "u", "rw", "dw", "f"].every((el) => !move.includes(el))
   );
   console.log({ filteredALGS });
   if (filteredALGS.length === 0) {
-    return getRandomALG();
+    return getRandomALG(algs);
   }
   return { algs: filteredALGS, index: randIdx };
 }
@@ -116,7 +123,7 @@ export function getTrainingManager(type, views) {
     const timer = new CubeTimer(1, views.timer);
     practiceEventHandler = new F2LPracticeEventHandler({
       timer,
-      generateScramble: generateF2LScramble,
+      generateScramble: () => generateNormalizedScramble(F2L_ALGS),
     });
     const f2LRecentSolveView = new F2LRecentSolveView(
       views.recentSolved,
