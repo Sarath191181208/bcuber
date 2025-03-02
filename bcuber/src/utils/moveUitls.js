@@ -1,3 +1,5 @@
+import { Alg } from "cubing/alg"
+import { normalizeRotationsInMoves } from "../components/moveNormalizeRotation"
 
 /**
  * Normalize a move string.
@@ -94,3 +96,57 @@ function getBetterMove(m1, m2) {
 
     return null
 }
+
+const getALGWithBasicMoves = (/** @type {string} */ alg) => {
+  const nrom = alg
+    .replaceAll(")", " ")
+    .replaceAll("(", " ")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .split(" ");
+  const x = normalizeRotationsInMoves(nrom);
+  return x.join(" ").replaceAll(/\s+/g, " ");
+};
+
+export const generateNormalizedScramble = async (allAlgs) => {
+  const { algs, index } = getRandomALG(allAlgs);
+  const nrom = getALGWithBasicMoves(algs[0]);
+  console.log("RAND ALG: ", { alg: algs[0], nrom });
+  const randScramble = new Alg(nrom)
+    .experimentalSimplify({
+      cancel: true,
+    })
+    .invert();
+  //   anything matching something like U2' or U2 will be replaced with U2
+  const scramble = randScramble.toString().replaceAll(/([UDFBRL])2'/g, "$12");
+  return { scramble, index };
+};
+
+/**
+ * @param {Object[]} algs
+ * @param {string[]} algs[].moves
+ * @returns {{algs: string[], index: number}}
+ */
+function getRandomALG(algs) {
+  const randIdx = Math.floor(Math.random() * algs.length);
+  const randomALGList = algs[randIdx];
+  console.log({ randomALGList });
+  const filteredALGS = filterALGS(randomALGList);
+  console.log({ filteredALGS });
+  if (filteredALGS.length === 0) {
+    return getRandomALG(algs);
+  }
+  return { algs: filteredALGS, index: randIdx };
+}
+
+/**
+ * @param {Object} algs
+ * @param {string[]} algs[].moves
+ */
+const filterALGS = (algs) => {
+  return algs.moves.filter((move) =>
+    ["M", "S", "E", "d", "u", "r", "d", "I", "l", "rw", "dw", "f"].every(
+      (el) => !move.includes(el)
+    )
+  );
+};
