@@ -7,7 +7,7 @@ import { SolveData, SolveDataTable } from "./solveData";
 import { TrainingManager } from "../components/TrainingManager/TrainingManager";
 import { ScrambleHandler } from "./scrambleHandler";
 import {
-  F2LRecentSolveView,
+  SinglePhaseRecentSolveView,
   RecentSolveView,
 } from "../components/recent-solve-view";
 import { normalizeRotationsInMoves } from "../components/moveNormalizeRotation";
@@ -109,7 +109,7 @@ export function getTrainingManager(type, views) {
       timer,
       generateScramble: () => generateNormalizedScramble(F2L_ALGS),
     });
-    const f2LRecentSolveView = new F2LRecentSolveView(
+    const f2LRecentSolveView = new SinglePhaseRecentSolveView(
       views.recentSolved,
       historyHandler.solves[0]
     );
@@ -130,15 +130,15 @@ export function getTrainingManager(type, views) {
       generateScramble: () => generateNormalizedScramble(OLL_ALGS),
     });
     practiceEventHandler = c;
-    const f2LRecentSolveView = new F2LRecentSolveView(
+    const OLLRecentSolveView = new SinglePhaseRecentSolveView(
       views.recentSolved,
       historyHandler.solves[0]
     );
-    f2LRecentSolveView.render(OLL_ALGS[0].moves);
+    OLLRecentSolveView.render(OLL_ALGS[0].moves);
 
     onSolve = (/** @type {SolveData} */ solve) => {
-      f2LRecentSolveView.solveData = solve;
-      f2LRecentSolveView.render(OLL_ALGS[c.OLLIndex].moves);
+      OLLRecentSolveView.solveData = solve;
+      OLLRecentSolveView.render(OLL_ALGS[c.OLLIndex].moves);
     };
 
     startTimerAutomatically = true;

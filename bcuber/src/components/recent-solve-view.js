@@ -254,7 +254,7 @@ function renderStats({ totalTimeSec, totalMoves, overallTPS }) {
         `;
 }
 
-export class F2LRecentSolveView {
+export class SinglePhaseRecentSolveView {
   /**
    * @param {HTMLElement} container - The container element where the view will be rendered.
    * @param {SolveData} solveData - The solve data object.
