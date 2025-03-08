@@ -19,14 +19,16 @@ import { SelectOLLScreen } from "./components/oll-select.js";
 
 // Create the cube and controller instances
 const cube = new RubiksCubeComponent(views.cube);
-const trainingType = TrainingType.OLL;
+const trainingType = TrainingType.CFOP;
 let trainingManager = getTrainingManager(trainingType, views);
 document.addEventListener("DOMContentLoaded", function () {
-    views.dropdowns.trainingSelect.dispatchEvent(new CustomEvent("value-select", { detail: trainingType }));
+  views.dropdowns.trainingSelect.dispatchEvent(
+    new CustomEvent("value-select", { detail: trainingType })
+  );
 });
 
 const ollSelect = new SelectOLLScreen(views.ollSelect);
-ollSelect.render()
+ollSelect.render();
 
 /**
  * Processes moves coming in from the cube.
@@ -83,16 +85,20 @@ views.buttons.autoScrambleOnSolve.addEventListener("click", () => {
   setAutoScrambleOnSolve(trainingManager, !state.autoScrambleOnSolve);
 });
 
-views.dropdowns.trainingSelect.addEventListener("value-select", (value) => {
-  // @ts-expect-error this is a custom event and a valid value is passed
-  const val = value.detail;
-  if (val === "F2L") {
-    trainingManager = getTrainingManager(TrainingType.F2L, views);
-  } else if (val === "OLL") {
-    trainingManager = getTrainingManager(TrainingType.OLL, views);
-  } else if (val === "CFOP") {
-    trainingManager = getTrainingManager(TrainingType.CFOP, views);
-  } else {
-    throw new Error("Invalid TrainingType");
+views.dropdowns.trainingSelect.addEventListener(
+  "value-select",
+  async (value) => {
+    // @ts-expect-error this is a custom event and a valid value is passed
+    const val = value.detail;
+    if (val === "F2L") {
+      trainingManager = getTrainingManager(TrainingType.F2L, views);
+    } else if (val === "OLL") {
+      trainingManager = getTrainingManager(TrainingType.OLL, views);
+    } else if (val === "CFOP") {
+      trainingManager = getTrainingManager(TrainingType.CFOP, views);
+    } else {
+      throw new Error("Invalid TrainingType");
+    }
+    await trainingManager.scrambleCube();
   }
-});
+);
