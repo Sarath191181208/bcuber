@@ -30,7 +30,7 @@
             background: var(--bg-primary);
             color: var(--text-color);
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
         }
 
         /* Sidebar Styling */
@@ -133,13 +133,14 @@
             border: none;
             border-radius: 6px;
             color: var(--text-color);
-            background: var(--outline-color);
             cursor: pointer;
+
+            background: rgba(255, 255, 255, 0.1);
             transition: background var(--transition);
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* Move List Container */
@@ -158,6 +159,7 @@
             border-radius: 20px;
             outline: 2px solid var(--muted);
             color: var(--text-color);
+            cursor: pointer;
             transition: background var(--transition), outline var(--transition);
         }
 
