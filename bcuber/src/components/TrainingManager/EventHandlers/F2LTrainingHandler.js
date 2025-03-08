@@ -28,6 +28,7 @@ export class F2LPracticeEventHandler extends AbstractPracticeEventHandler {
      * @param {import('./types.js').CubeEvent} event 
      */
     handleEvent(event) {
+        console.log("[EVENT]: ", event)
         if (event.name == CFOPCubeSolvingPhase.F2l_COMPLETE || event.name == CFOPCubeSolvingPhase.SOLVED) {
             this.timer.saveCheckpoint()
             for (let subscriber of this._eventSubscribers) {

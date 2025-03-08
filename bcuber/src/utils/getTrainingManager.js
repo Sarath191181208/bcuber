@@ -93,11 +93,13 @@ export function getTrainingManager(type, views) {
         if (Object.values(selectedOLLS).length <= 0) {
           return generateNormalizedScramble(selectedOLLS);
         }
+        console.log("[SELECTED OLLS]: ", selectedOLLS);
         const filteredALGS = OLL_ALGS.filter((alg, i) => {
-          if(alg.name in selectedOLLS) {
+          if (alg.name in selectedOLLS && selectedOLLS[alg.name]) {
             return true;
           }
         });
+        console.log("[FILTERED OLLS]: ", filteredALGS);
         return generateNormalizedScramble(filteredALGS);
       },
     });
