@@ -1,21 +1,13 @@
 //@ts-check
 import { RubiksCubeComponent } from "./components/render-cube.js";
 import { SolveDataTable } from "./utils/solveData.js";
-import { selectElement } from "./utils/domUtils.js";
 import { getInverse } from "./utils/moveUitls.js";
+import { views } from "./views/replay.js";
 
 let selectedSolveIndex = null;
 
 const historyHandler = new SolveDataTable(document.createElement("div"));
 historyHandler.solves = historyHandler.storage.loadSolves();
-
-const solveCardsContainer = selectElement("#solveCards");
-const cubeContainer = selectElement("#cubeContainer");
-const moveContainer = selectElement("#moveCounter");
-const moveList = selectElement("#moveList");
-const replaySolveButton = selectElement("#replaySolveButton");
-const nextMoveButton = selectElement("#nextMoveButton");
-const prevMoveButton = selectElement("#prevMoveButton");
 
 historyHandler.solves.forEach((s) => {
   if (!s.startTime) {
@@ -27,7 +19,7 @@ historyHandler.solves.forEach((s) => {
 const solves = historyHandler.solves.sort((a, b) => b.startTime - a.startTime);
 
 function renderSolveHistory() {
-  solveCardsContainer.innerHTML = solves.length
+  views.solveCardsContainer.innerHTML = solves.length
     ? solves
         .map(
           (s, i) => `
@@ -57,27 +49,33 @@ function renderSolveHistory() {
       if (idx == null) {
         throw new Error("Index is null");
       }
+      // reset the cube
+      cube = new RubiksCubeComponent(views.cubeContainer);
       selectedSolveIndex = parseInt(idx);
-      updateMoveCounter();
+      const currentSolve = historyHandler.solves[selectedSolveIndex];
+      cube.addMoves(currentSolve.scramble);
+      currentMoveIndex = 0;
+      renderMoveList();
+      renderMoveList();
     })
   );
 }
 renderSolveHistory();
 
-const cube = new RubiksCubeComponent(cubeContainer);
+let cube = new RubiksCubeComponent(views.cubeContainer);
 let currentMoveIndex = 0;
 
 function getSolutionMoves() {
   const solve = historyHandler.solves[selectedSolveIndex];
   const allmovesArr = solve.getCheckpointSegmentsMoves();
-  const crossMoves = allmovesArr[0].replace(/s+/g, " ");
+  const crossMoves = allmovesArr[0].replace(/\s+/g, " ");
   const f2lMoves =
     `${allmovesArr[1]}  ${allmovesArr[2]}  ${allmovesArr[3]}  ${allmovesArr[4]}`.replace(
-      /s+/g,
+      /\s+/g,
       " "
     );
-  const ollMoves = allmovesArr[5].replace(/s+/g, " ");
-  const pllMoves = allmovesArr[6].replace(/s+/g, " ");
+  const ollMoves = allmovesArr[5].replace(/\s+/g, " ");
+  const pllMoves = allmovesArr[6].replace(/\s+/g, " ");
   return {
     cross: crossMoves.split(" "),
     f2l: f2lMoves.split(" "),
@@ -86,7 +84,7 @@ function getSolutionMoves() {
   };
 }
 
-function updateMoveCounter() {
+function renderMoveList() {
   if (selectedSolveIndex == null) return;
 
   let { cross, f2l, oll, pll } = getSolutionMoves();
@@ -96,65 +94,51 @@ function updateMoveCounter() {
   const f2lMoves = f2l.length + crossMoves;
   const ollMoves = oll.length + f2lMoves;
 
-  moveContainer.textContent = `Move: ${currentMoveIndex} / ${allMoves.length}`;
+  views.moveContainer.textContent = `Move: ${currentMoveIndex} / ${allMoves.length}`;
 
-  moveList.innerHTML = `
-        <h3>Cross</h3> ${cross
-          .map(
-            (m, i) =>
-              `<span class="move-pill ${
-                i < currentMoveIndex ? "completed" : ""
-              }">${m}</span>`
-          )
-          .join("")}
-        <h3>F2L</h3> ${f2l
-          .map(
-            (m, i) =>
-              `<span class="move-pill ${
-                crossMoves + i < currentMoveIndex ? "completed" : ""
-              }">${m}</span>`
-          )
-          .join("")}
-        <h3>OLL</h3> ${oll
-          .map(
-            (m, i) =>
-              `<span class="move-pill ${
-                f2lMoves + i < currentMoveIndex ? "completed" : ""
-              }">${m}</span>`
-          )
-          .join("")}
-        <h3>PLL</h3> ${pll
-          .map(
-            (m, i) =>
-              `<span class="move-pill ${
-                ollMoves + i < currentMoveIndex ? "completed" : ""
-              }">${m}</span>`
-          )
-          .join("")}
-    `;
+  const createMovePills = (moves, offset) =>
+    moves
+      .map(
+        (m, i) => `
+        <span class="move-pill ${
+          offset + i < currentMoveIndex ? "completed" : ""
+        }" 
+              data-index="${offset + i}">
+          ${m}
+        </span>
+      `
+      )
+      .join("");
+
+  views.moveList.innerHTML = `
+    <h3>Cross</h3> ${createMovePills(cross, 0)}
+    <h3>F2L</h3> ${createMovePills(f2l, crossMoves)}
+    <h3>OLL</h3> ${createMovePills(oll, f2lMoves)}
+    <h3>PLL</h3> ${createMovePills(pll, ollMoves)}
+  `;
+
+  document.querySelectorAll(".move-pill").forEach((pill) =>
+    pill.addEventListener("click", (event) => {
+      let moveIndex = parseInt(event.target.getAttribute("data-index"));
+      if (!isNaN(moveIndex)) {
+        currentMoveIndex = moveIndex;
+        cube.addMoves(allMoves[moveIndex]);
+        renderMoveList();
+      }
+    })
+  );
 }
 
-replaySolveButton.addEventListener("click", () => {
-  if (selectedSolveIndex == null) {
-    alert("No Current Solve, please select one first");
-    return;
-  }
-  const currentSolve = historyHandler.solves[selectedSolveIndex];
-  cube.addMoves(currentSolve.scramble);
-  currentMoveIndex = 0;
-  updateMoveCounter();
-});
-
-nextMoveButton.addEventListener("click", () => {
+views.buttons.nextMove.addEventListener("click", () => {
   let { cross, f2l, oll, pll } = getSolutionMoves();
   let allMoves = [...cross, ...f2l, ...oll, ...pll];
   console.log("[All Moves]: ", allMoves);
   if (currentMoveIndex < allMoves.length)
     cube.addMoves(allMoves[currentMoveIndex++]);
-  updateMoveCounter();
+  renderMoveList();
 });
 
-prevMoveButton.addEventListener("click", () => {
+views.buttons.prevMove.addEventListener("click", () => {
   let { cross, f2l, oll, pll } = getSolutionMoves();
   let allMoves = [...cross, ...f2l, ...oll, ...pll];
 
@@ -164,5 +148,5 @@ prevMoveButton.addEventListener("click", () => {
     cube.addMoves(reverseMove);
     currentMoveIndex--;
   }
-  updateMoveCounter();
+  renderMoveList();
 });
