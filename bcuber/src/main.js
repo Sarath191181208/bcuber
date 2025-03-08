@@ -7,7 +7,7 @@ import {
   getTrainingManager,
   TrainingType,
 } from "./utils/getTrainingManager.js";
-import { views } from "./views.js";
+import { views } from "./views/home.js";
 import {
   connectWithBluetooth,
   setAutoScrambleOnSolve,

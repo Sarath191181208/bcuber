@@ -4,7 +4,7 @@ import { QiYiCubeController } from "./components/qiyi/cubeController";
 import { TrainingManager } from "./components/TrainingManager/TrainingManager";
 import { state } from "./state";
 import { BluetoothConnectedIcon, BluetoothConnectingIcon } from "./utils/icons";
-import { views } from "./views";
+import { views } from "./views/home";
 
 /**
  * @param {TrainingManager} trainingManager

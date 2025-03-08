@@ -1,4 +1,4 @@
-import { selectElement } from "./utils/domUtils";
+import { selectElement } from "../utils/domUtils";
 
 const qiyiConnect = selectElement("#qiyi-connect-btn");
 const cube = selectElement("#cube");
