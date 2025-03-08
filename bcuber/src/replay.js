@@ -3,6 +3,7 @@ import { RubiksCubeComponent } from "./components/render-cube.js";
 import { SolveDataTable } from "./utils/solveData.js";
 import { getInverse } from "./utils/moveUitls.js";
 import { views } from "./views/replay.js";
+import { Alg } from "cubing/alg";
 
 let selectedSolveIndex = null;
 
@@ -140,11 +141,31 @@ function renderMoveList() {
   document.querySelectorAll(".move-pill").forEach((pill) =>
     pill.addEventListener("click", (event) => {
       let moveIndex = parseInt(event.target.getAttribute("data-index"));
-      if (!isNaN(moveIndex)) {
-        currentMoveIndex = moveIndex;
-        cube.addMoves(allMoves[moveIndex]);
-        renderMoveList();
+      if (isNaN(moveIndex)) {
+        alert(
+          "Invalid move index, this shouldn't have happend. Please report this issue."
+        );
+        return;
       }
+      const isReverse = moveIndex < currentMoveIndex;
+      let moves = [];
+      if (isReverse) {
+        moves = allMoves.slice(moveIndex, currentMoveIndex);
+        const alg = new Alg(moves.join(" ").replace(/\s+/g, " "));
+        moves = alg.invert().toString().split(" ");
+        currentMoveIndex = moveIndex;
+      } else {
+        moves = allMoves.slice(currentMoveIndex, moveIndex + 1);
+        currentMoveIndex = moveIndex + 1;
+      }
+      console.log("[Move Index]: ", {
+        moveIndex,
+        currentMoveIndex,
+        moves,
+        isReverse,
+      });
+      cube.addMoves(moves.join(" "));
+      renderMoveList();
     })
   );
 }
@@ -163,8 +184,9 @@ views.buttons.prevMove.addEventListener("click", () => {
   let allMoves = [...cross, ...f2l, ...oll, ...pll];
 
   if (currentMoveIndex > 0) {
-    const move = allMoves[currentMoveIndex].toString();
-    const reverseMove = getInverse(move);
+    const move = allMoves[currentMoveIndex-1].toString();
+    const reverseMove = new Alg(move).invert().toString();
+    console.log("[Reverse Move]: ", reverseMove);
     cube.addMoves(reverseMove);
     currentMoveIndex--;
   }

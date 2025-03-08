@@ -19,7 +19,8 @@ export class RubiksCubeComponent {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.width, this.height);
         // this.renderer.setClearColor(0x000000, 0);
-        this.container.appendChild(this.renderer.domElement);
+        // this.container.appendChild(this.renderer.domElement);
+        this.container.replaceChildren(this.renderer.domElement);
 
         // ----------------- Add Controls -----------------
         // Trackball Controls
@@ -279,6 +280,15 @@ export class RubiksCubeComponent {
         } else {
             this.transformControls.attach(this.cubeGroup);
         }
+    }
+
+    reset() {
+        this.cubeGroup.rotation.set(0, 0, 0);
+        this.cubeGroup.quaternion.set(0, 0, 0, 1);
+        if (this.gizmosEnabled) {
+            this.transformControls.attach(this.cubeGroup);
+        }
+
     }
 
     resetAxes() {
