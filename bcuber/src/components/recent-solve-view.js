@@ -127,6 +127,7 @@ export class RecentSolveView {
         </h2>
         <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
         ${renderStats({ totalTimeSec, totalMoves, overallTPS })}
+        </div>
         <div>
           <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">Stage Breakdown</h3>
           <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;">
@@ -250,7 +251,6 @@ function renderStats({ totalTimeSec, totalMoves, overallTPS }) {
             <h3 style="margin: 0; font-size: 1.1rem;">TPS</h3>
             <p style="margin: 0;">${overallTPS.toFixed(2)}</p>
           </div>
-        </div>
         `;
 }
 
@@ -283,6 +283,9 @@ export class SinglePhaseRecentSolveView {
     const totalTimeSec = (s.endTime - s.startTime) / 1000;
     const totalMoves = s.moves.length;
     const totalTPS = totalTimeSec > 0 ? totalMoves / totalTimeSec : 0;
+
+    const inspectionTime = (s.moves[0].timestamp - s.startTime) / 1000;
+    const executionTime = totalTimeSec - inspectionTime;
 
     // Render solution moves in a horizontal block above the timeline.
     const solutionMovesHTML = `
@@ -408,8 +411,17 @@ export class SinglePhaseRecentSolveView {
           max-width: 800px;
           margin: auto;
       ">
-        <h2 style="text-align: center; margin-bottom: 20px;">F2L Analysis</h2>
         <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Inspection</h3>
+            <p style="margin: 0;">${inspectionTime.toFixed(2)} s</p>
+          </div>
+
+          <div style="text-align: center;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Execution</h3>
+            <p style="margin: 0;">${executionTime.toFixed(2)} s</p>
+          </div>
+
           ${renderStats({ totalTimeSec, totalMoves, overallTPS: totalTPS })}
         </div>
         ${scrambleHTML}
