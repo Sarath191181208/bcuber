@@ -111,10 +111,30 @@ function renderMoveList() {
       .join("");
 
   views.moveList.innerHTML = `
-    <h3>Cross</h3> ${createMovePills(cross, 0)}
-    <h3>F2L</h3> ${createMovePills(f2l, crossMoves)}
-    <h3>OLL</h3> ${createMovePills(oll, f2lMoves)}
-    <h3>PLL</h3> ${createMovePills(pll, ollMoves)}
+    <div class="move-list-header">
+        <h3>Cross</h3>
+        <div class="move-pill-container">
+            ${createMovePills(cross, 0)}
+        </div>
+    </div>
+    <div class="move-list-header">
+        <h3>F2L</h3>
+        <div class="move-pill-container">
+            ${createMovePills(f2l, crossMoves)}
+        </div>
+    </div>
+    <div class="move-list-header">
+        <h3>OLL</h3>
+        <div class="move-pill-container">
+            ${createMovePills(oll, f2lMoves)}
+        </div>
+    </div>
+    <div class="move-list-header">
+        <h3>PLL</h3>
+        <div class="move-pill-container">
+            ${createMovePills(pll, ollMoves)}
+        </div>
+    </div>
   `;
 
   document.querySelectorAll(".move-pill").forEach((pill) =>
